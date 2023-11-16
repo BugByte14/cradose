@@ -1,0 +1,9 @@
+# Cache files
+**/__pycache__
+
+# Test data
+./Output/Crawled Data/*
+./Output/Document Sizes/*
+./Output/Inverted Indexes/*
+
+db.sqlite3
