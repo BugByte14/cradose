@@ -1,7 +1,6 @@
 import os
 import io
 import requests
-import pdfplumber
 from django.shortcuts import render, redirect
 from Cradose.settings import BASE_DIR
 from PyPDF2 import PdfReader
@@ -15,16 +14,17 @@ def done(request):
     # Selected crawled file types
     srcs = request.POST.get('srcs', "0")
     htmls = request.POST.get('htmls', "0")
-    txts = request.POST.get('txts', "0")
+    pdfs = request.POST.get('pdfs', "0")
     imgs = request.POST.get('imgs', "0")
     vids = request.POST.get('vids', "0")
     mp3s = request.POST.get('mp3s', "0")
     
     # Storing the file types in a list
+    global filetypes
     filetypes = []
     filetypes.append("srcs" if srcs == "1" else "")
     filetypes.append("htmls" if htmls == "1" else "")
-    filetypes.append("txts" if txts == "1" else "")
+    filetypes.append("pdfs" if pdfs == "1" else "")
     filetypes.append("imgs" if imgs == "1" else "")
     filetypes.append("vids" if vids == "1" else "")
     filetypes.append("mp3s" if mp3s == "1" else "")
@@ -48,7 +48,8 @@ def done(request):
         doc_sizes = {}
         
         #Iterating over each file in the directory
-        for filename in sorted(os.listdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file)):
+        files = [filename for filename in sorted(os.listdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file)) if not os.path.isdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename)]
+        for filename in files:
             url = filename.replace("!", "/").replace(";", ":").replace(".txt", "").replace(parent_url,'/')
             doc_sizes[url] = len(open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename, "r", encoding="utf-8", errors="replace").read().split())
             
@@ -65,7 +66,8 @@ def done(request):
         inverse_indexes = {}
 
         #Iterating over each file in the directory
-        for filename in sorted(os.listdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file)):
+        files = [filename for filename in sorted(os.listdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file)) if not os.path.isdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename)]
+        for filename in files:
             url = filename.replace("!", "/").replace(";", ":").replace(".txt", "").replace(parent_url,'/')
 
             #Splitting the text by words and iterating over each word
@@ -139,15 +141,31 @@ def done(request):
         file.write(' '.join(valid_words))
         file.close()
         
-    # This function saves the text of a given url to a text file
-    def store_text(url):
+    # This function stores the source code of a url
+    def store_src(url):
         print("Reading " + url)
 
         # Since files can't have / in their name, we'll replace them with |
         filename = url.replace("/", "!").replace(":", ";")
 
-        # If a given page is a pdf file we need to do some extraction
-        if url.endswith(".pdf") or url.endswith(".PDF") or url.endswith(".pdf/") or url.endswith(".PDF/"):
+        # Pull the text we want to store from the url
+        text = requests.get(url).text
+
+        print("Writing " + url)
+        # Write the contents of the url to a text file
+        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/src/", exist_ok=True)
+        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/src/" + filename + ".html", "w", encoding="utf-8")
+        file.write(text)
+        file.close()
+        
+    # This function stores the visible text of a url
+    def store_html_text(url):
+        print("Reading " + url)
+
+        # Since files can't have / in their name, we'll replace them with |
+        filename = url.replace("/", "!").replace(":", ";")
+
+        if url.endswith('.pdf') or url.endswith('.pdf/'):
             resource = requests.get(url)
             pdf_file = io.BytesIO(resource.content)
             pdf_text = ""
@@ -159,16 +177,12 @@ def done(request):
             except:
                 print("Error reading PDF file: " + url)
             text = ' '.join(pdf_text.split())
-
-        # Text and HTML files don't require the extra processing that PDFs do
         else:
-
-            # Pull the text we want to store from the url
             text = requests.get(url).text
 
-            # Remove any html tags or extra whitespace from the text
-            soup = BeautifulSoup(text, features="lxml")
-            text = ' '.join(soup.get_text().split())
+        # Remove any html tags or extra whitespace from the text
+        soup = BeautifulSoup(text, features="lxml")
+        text = ' '.join(soup.get_text().split())
 
         # Split the text string into a list of words
         words = text.split()
@@ -181,6 +195,24 @@ def done(request):
             file.write(word + "\n")
         file.close()
         remove_junk(url)
+        
+    # This function stores the text on a pdf
+    def store_pdf(url):
+        print("Reading " + url)
+
+        # Since files can't have / in their name, we'll replace them with |
+        filename = url.replace("/", "!").replace(":", ";")
+        
+        # Pull the text we want to store from the url
+        resource = requests.get(url, headers=headers)
+
+        print("Writing " + url)
+        
+        # Write the contents of the url to a pdf file
+        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/pdfs', exist_ok=True)
+        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/pdfs/" + filename + ".pdf", "wb")
+        file.write(resource.content)
+        file.close()
 
     # This function checks if a url has other links and calls store_text on them
     def search_links(url, parent_stack):
@@ -204,7 +236,13 @@ def done(request):
             # Make sure we haven't already checked this url
             if url not in links_list:
                 links_list.append(url)
-                store_text(url)
+                if "srcs" in filetypes:
+                    store_src(url)
+                if "htmls" in filetypes:
+                    store_html_text(url)
+                if parent_url.endswith('.pdf') or parent_url.endswith('.pdf/'):
+                    if "pdfs" in filetypes:
+                        store_pdf(url)
                 
             # If there are more links to check, backtrack to the parent url
             if parent_stack:
@@ -219,17 +257,34 @@ def done(request):
             try:
                 # Make sure the link stays on the parent domain and hasn't already been checked
                 if link.get('href') not in links_list and link.get('href') != parent_url:
-                    # If the link is a text or pdf file, it likely won't contain links, so we'll just store them
-                    if link.get('href').endswith('.pdf') or link.get('href').endswith('.txt'): 
+                    
+                    # If the link is a html file, php file, or a directory, we'll store the text and check for more links
+                    if link.get('href').endswith('.html') or link.get('href').endswith('.htm') or link.get('href').endswith('.php') or link.get('href').endswith('/') or link.get('href').endswith('htm/') or link.get('href').endswith('html/') or link.get('href').endswith('php/'):
                         links_list.append(link.get('href'))
-                        store_text(link.get('href'))
-
-                    # If the link is a html file or a directory, we'll store the text and check for more links
-                    elif link.get('href').endswith('.html') or link.get('href').endswith('.htm') or link.get('href').endswith('.php') or link.get('href').endswith('/'):
-                        links_list.append(link.get('href'))
-                        store_text(link.get('href'))
+                        if "srcs" in filetypes:
+                            store_src(link.get('href'))
+                        if "htmls" in filetypes:
+                            store_html_text(link.get('href'))
                         parent_stack.append(url)
                         search_links(link.get('href'), parent_stack)
+                    
+                    # If the link is a txt file, we'll just store the text
+                    elif link.get('href').endswith('.txt') or link.get('href').endswith('.txt/'):
+                        links_list.append(link.get('href'))
+                        if "srcs" in filetypes:
+                            store_src(link.get('href'))
+                        if "htmls" in filetypes:
+                            store_html_text(link.get('href'))
+                        
+                    # If the link is a pdf file, we'll just store the text (after preprocessing)
+                    elif link.get('href').endswith('.pdf') or link.get('href').endswith('.pdf/'): 
+                        links_list.append(link.get('href'))
+                        if "src" in filetypes:
+                            store_src(link.get('href'))
+                        if "htmls" in filetypes:
+                            store_html_text(link.get('href'))
+                        if "pdfs" in filetypes:
+                            store_pdf(link.get('href'))
 
                     # If the link is a different type (such as an image) we just ignore it
                     else:
@@ -245,6 +300,7 @@ def done(request):
 
     # Search for all links on the page
     search_links(parent_url, [])
-    index()
-    count_words()
+    if "htmls" in filetypes:
+        index()
+        count_words()
     return redirect('search')
