@@ -12,6 +12,24 @@ def crawl(request):
     return render(request, 'crawl.html')
 
 def done(request):
+    # Selected crawled file types
+    srcs = request.POST.get('srcs', "0")
+    htmls = request.POST.get('htmls', "0")
+    txts = request.POST.get('txts', "0")
+    imgs = request.POST.get('imgs', "0")
+    vids = request.POST.get('vids', "0")
+    mp3s = request.POST.get('mp3s', "0")
+    
+    # Storing the file types in a list
+    filetypes = []
+    filetypes.append("srcs" if srcs == "1" else "")
+    filetypes.append("htmls" if htmls == "1" else "")
+    filetypes.append("txts" if txts == "1" else "")
+    filetypes.append("imgs" if imgs == "1" else "")
+    filetypes.append("vids" if vids == "1" else "")
+    filetypes.append("mp3s" if mp3s == "1" else "")
+    
+    # The inputted url
     global parent_url
     parent_url = request.POST['url'] if request.POST['url'].endswith('/') else request.POST['url'] + '/'
     if not parent_url.startswith('https://www.'):
