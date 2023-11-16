@@ -55,26 +55,4 @@
             <input type="number" name="depth" min="1" max="10" value="1"><br>
         </form>
     </div>
-    <script>
-        function setValue() {
-            if (document.getElementsByName("srcs")[0].checked == true) { srcs = true; }
-            else { srcs = false; }
-            if (document.getElementsByName("htmls")[0].checked == true) { htmls = true; }
-            else { htmls = false; }
-            if (document.getElementsByName("txts")[0].checked == true) { txts = true; }
-            else { txts = false; }
-            if (document.getElementsByName("imgs")[0].checked == true) { imgs = true; }
-            else { imgs = false; }
-            if (document.getElementsByName("vids")[0].checked == true) { vids = true; }
-            else { vids = false; }
-            if (document.getElementsByName("mp3s")[0].checked == true) { mp3s = true; }
-            else { mp3s = false; }
-        }
-        function openPasswordWindow() {
-            document.getElementById("password-window").style.display = "block";
-        }
-        function closePasswordWindow() {
-            document.getElementById("password-window").style.display = "none";
-        }
-    </script>
 </body>
