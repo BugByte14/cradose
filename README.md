@@ -15,7 +15,7 @@ Cradose (CRAwl, DOcument, and SEarch) is a web application built using the Djang
 
 ## Prerequisites
 
-To run this you need to have Python>=3.10, scikit-learn>=1.3, and Django>=4.2.7 installed.
+To run this you need to have Python>=3.10. Other requirements can be installed using `pip install -r requirements.txt`.
 
 Installation instructions for Django can be found [here](https://www.djangoproject.com/download/).
 
