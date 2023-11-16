@@ -35,6 +35,32 @@
                 <input type="text" name="url" placeholder="Enter URL">
                 <button type="submit" name="submit-crawl">Crawl</button><br>
             </div>
+            <hr>
+            <label for="file-type">Which file types should be saved?</label><br>
+            <input type="checkbox" name="file-type" value="srcs"> Web Page Source Codes<br>
+            <input type="checkbox" name="file-type" value="htmls"> Web Page Contents<br>
+            <input type="checkbox" name="file-type" value="txts"> Text Files<br>
+            <input type="checkbox" name="file-type" value="imgs"> Images<br>
+            <input type="checkbox" name="file-type" value="vids"> Videos<br>
+            <input type="checkbox" name="file-type" value="mp3s"> Audio Files<br>
+            <label for="compression">How should the output be saved?</label><br>
+            <input type="radio" name="compression" value="zip" onclick="closePasswordWindow()"> Compress to a zip file<br>
+            <input type="radio" name="compression" value="pzip" onclick="openPasswordWindow()"> Compress to a password-protected zip file<br>
+            <div id="password-window" style="display: none;">
+                <label for="password">Enter password:</label><br>
+                <input type="password" name="password" autocomplete="false"><br>
+            </div>
+            <input type="radio" name="compression" value="no-zip" onclick="closePasswordWindow()"> Do not compress<br>
+            <label for="depth">How many levels should the crawler go?</label><br>
+            <input type="number" name="depth" min="1" max="10" value="1"><br>
         </form>
     </div>
+    <script>
+        function openPasswordWindow() {
+            document.getElementById("password-window").style.display = "block";
+        }
+        function closePasswordWindow() {
+            document.getElementById("password-window").style.display = "none";
+        }
+    </script>
 </body>
