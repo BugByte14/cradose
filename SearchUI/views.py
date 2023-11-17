@@ -10,7 +10,8 @@ from decimal import Decimal
 def search(request):
     urls = []
     for filename in sorted(os.listdir(str(BASE_DIR) + "/Output/Crawled Files")):
-        urls.append(filename.replace("!", "/").replace(";", ":"))
+        if os.path.isdir(str(BASE_DIR) + "/Output/Crawled Files/" + filename):
+            urls.append(filename.replace("!", "/").replace(";", ":"))
     return render(request, 'search.html', {
         'urls': urls,
     })
