@@ -16,9 +16,13 @@ def done(request):
     srcs = request.POST.get('srcs', "0")
     htmls = request.POST.get('htmls', "0")
     pdfs = request.POST.get('pdfs', "0")
+    docs = request.POST.get('docs', "0")
+    xls = request.POST.get('xls', "0")
+    ppts = request.POST.get('ppts', "0")
     imgs = request.POST.get('imgs', "0")
     vids = request.POST.get('vids', "0")
     mp3s = request.POST.get('mp3s', "0")
+    zips = request.POST.get('zips', "0")
     
     # Storing the file types in a list
     global filetypes
@@ -26,9 +30,13 @@ def done(request):
     filetypes.append("srcs" if srcs == "1" else "")
     filetypes.append("htmls" if htmls == "1" else "")
     filetypes.append("pdfs" if pdfs == "1" else "")
+    filetypes.append("docs" if docs == "1" else "")
+    filetypes.append("xls" if xls == "1" else "")
+    filetypes.append("ppts" if ppts == "1" else "")
     filetypes.append("imgs" if imgs == "1" else "")
     filetypes.append("vids" if vids == "1" else "")
     filetypes.append("mp3s" if mp3s == "1" else "")
+    filetypes.append("zips" if zips == "1" else "")
     
     # The inputted url
     global parent_url
