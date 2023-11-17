@@ -252,7 +252,32 @@ def done(request):
         
         # Write the contents of the url to a pdf file
         os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/docs', exist_ok=True)
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/docs/" + filename + ".doc", "wb")
+        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/docs/" + filename + ".docx", "wb")
+        file.write(resource.content)
+        file.close()
+        
+    def store_xls(url):
+        print("Reading " + url)
+
+        if url.endswith('.xls/') or url.endswith('.xlsx/'):
+            url = url[:-1]
+        
+        # Since files can't have / in their name, we'll replace them with |
+        filename = url.replace("/", "!").replace(":", ";")
+        
+        # Pull the text we want to store from the url
+        resource = requests.get(url, 
+                headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                stream=True,
+                verify=False)
+        print(resource.status_code)
+        
+
+        print("Writing " + url)
+        
+        # Write the contents of the url to a pdf file
+        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/xls', exist_ok=True)
+        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/xls/" + filename + ".xlsx", "wb")
         file.write(resource.content)
         file.close()
 
@@ -288,6 +313,9 @@ def done(request):
                 if parent_url.endswith('.doc') or parent_url.endswith('.docx') or parent_url.endswith('.odt') or parent_url.endswith('.doc/') or parent_url.endswith('.docx/') or parent_url.endswith('.odt/'):
                     if "docs" in filetypes:
                         store_doc(url)
+                if parent_url.endswith('.xls') or parent_url.endswith('.xlsx') or parent_url.endswith('.ods') or parent_url.endswith('.xls/') or parent_url.endswith('.xlsx/') or parent_url.endswith('.ods/'):
+                    if "xls" in filetypes:
+                        store_xls(url)
                 
             # If there are more links to check, backtrack to the parent url
             if parent_stack:
@@ -337,6 +365,13 @@ def done(request):
                             store_src(link.get('href'))
                         if "docs" in filetypes:
                             store_doc(link.get('href'))
+                            
+                    elif link.get('href').endswith('.xls') or link.get('href').endswith('.xlsx') or link.get('href').endswith('.ods') or link.get('href').endswith('.xls/') or link.get('href').endswith('.xlsx/') or link.get('href').endswith('.ods/'):
+                        links_list.append(link.get('href'))
+                        if "srcs" in filetypes:
+                            store_src(link.get('href'))
+                        if "xls" in filetypes:
+                            store_xls(link.get('href'))
 
                     # If the link is a different type (such as an image) we just ignore it
                     else:
