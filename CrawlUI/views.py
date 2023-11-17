@@ -1,6 +1,7 @@
 import os
 import io
 import requests
+import urllib.request
 from django.shortcuts import render, redirect
 from Cradose.settings import BASE_DIR
 from PyPDF2 import PdfReader
@@ -200,17 +201,26 @@ def done(request):
     def store_pdf(url):
         print("Reading " + url)
 
+        if url.endswith('.pdf/'):
+            url = url[:-1]
+        
         # Since files can't have / in their name, we'll replace them with |
         filename = url.replace("/", "!").replace(":", ";")
         
         # Pull the text we want to store from the url
-        resource = requests.get(url, headers=headers)
+        resource = requests.get(url, 
+                headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                stream=True,
+                verify=False)
+        print(resource.status_code)
+        
 
         print("Writing " + url)
         
         # Write the contents of the url to a pdf file
         os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/pdfs', exist_ok=True)
         file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/pdfs/" + filename + ".pdf", "wb")
+        #urllib.request.urlretrieve(url, str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/pdfs/" + filename + ".pdf")
         file.write(resource.content)
         file.close()
 
