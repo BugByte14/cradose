@@ -1,9 +1,9 @@
 import os
 import io
 import requests
-import urllib.request
 from django.shortcuts import render, redirect
 from Cradose.settings import BASE_DIR
+from urllib.parse import urlparse
 from PyPDF2 import PdfReader
 from bs4 import BeautifulSoup
 
@@ -305,6 +305,45 @@ def done(request):
         file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/ppts/" + filename + ".pptx", "wb")
         file.write(resource.content)
         file.close()
+        
+    def store_images(url):
+        print("Reading " + url)
+        
+        # Searches for img tags in the html
+        soup = BeautifulSoup(requests.get(url).text, features="lxml")
+        images = soup.find_all('img')
+        
+        if url.endswith('.php/'):
+            parsed_url = urlparse(url)
+            root_url = parsed_url.scheme + "://" + parsed_url.netloc
+            print(root_url)
+            
+        # Stores each image in the imgs folder
+        for image in images:
+            try:
+                image_url = image.get('src')
+                
+                # If the image url isn't a full url, append it to the parent url
+                if not image_url.startswith('http') and not image_url.startswith('blob'):
+                    image_url = root_url + image_url
+                    
+                # Since files can't have / in their name, we'll replace them with |
+                filename = image_url.replace("/", "!").replace(":", ";")
+                
+                resource = requests.get(image_url, 
+                        headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                        stream=True,
+                        verify=False)
+                
+                # Write the contents to a png file
+                print("Writing " + image_url)
+                os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/imgs', exist_ok=True)
+                file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename, "wb")
+                file.write(resource.content)
+                file.close()
+            except:
+                print("Error reading image: " + image_url)
+                continue
 
     # This function checks if a url has other links and calls store_text on them
     def search_links(url, parent_stack):
@@ -344,6 +383,8 @@ def done(request):
                 if parent_url.endswith('.ppt') or parent_url.endswith('.pptx') or parent_url.endswith('.odp') or parent_url.endswith('.ppt/') or parent_url.endswith('.pptx/') or parent_url.endswith('.odp/'):
                     if "ppts" in filetypes:
                         store_ppt(url)
+                if "imgs" in filetypes:
+                    store_images(url)
                 
             # If there are more links to check, backtrack to the parent url
             if parent_stack:
@@ -352,6 +393,10 @@ def done(request):
             # If there are no more links to check, we're done
             else:
                 return
+        
+        # Search for images on current page before checking links
+        if "imgs" in filetypes:
+            store_images(url)
         
         # Iterate over each link and check its file type
         for link in links:
