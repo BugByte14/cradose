@@ -1,11 +1,15 @@
 import os
 import io
 import requests
+import urllib3
 from django.shortcuts import render, redirect
 from Cradose.settings import BASE_DIR
 from urllib.parse import urlparse
 from PyPDF2 import PdfReader
 from bs4 import BeautifulSoup
+
+# Disable annoying warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Create your views here.
 def crawl(request):
@@ -40,10 +44,13 @@ def done(request):
     
     # The inputted url
     global parent_url
-    parent_url = request.POST['url'] if request.POST['url'].endswith('/') else request.POST['url'] + '/'
+    parent_url = request.POST['url']# if request.POST['url'].endswith('/') else request.POST['url'] + '/'
     if not parent_url.startswith('https://www.'):
         parent_url = 'https://www.' + parent_url.replace("http://", "").replace("https://", "").replace("www.", "")
-    parent_url_file = parent_url[:-1].replace("/", "!").replace(":", ";")
+    if parent_url.endswith('/'):
+        parent_url_file = parent_url[:-1].replace("/", "!").replace(":", ";")
+    else:
+        parent_url_file = parent_url.replace("/", "!").replace(":", ";")
     
     # This will store links we've already checked to prevent duplicates
     global links_list
@@ -152,7 +159,7 @@ def done(request):
         
     # This function stores the source code of a url
     def store_src(url):
-        print("Reading " + url)
+        print("Looking for the source code for " + url)
 
         # Since files can't have / in their name, we'll replace them with |
         filename = url.replace("/", "!").replace(":", ";")
@@ -160,7 +167,7 @@ def done(request):
         # Pull the text we want to store from the url
         text = requests.get(url).text
 
-        print("Writing " + url)
+        print("Downloading source code to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/src/" + filename + ".html")
         # Write the contents of the url to a text file
         os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/src/", exist_ok=True)
         file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/src/" + filename + ".html", "w", encoding="utf-8")
@@ -169,7 +176,7 @@ def done(request):
         
     # This function stores the visible text of a url
     def store_html_text(url):
-        print("Reading " + url)
+        print("Looking for text on " + url)
 
         # Since files can't have / in their name, we'll replace them with |
         filename = url.replace("/", "!").replace(":", ";")
@@ -181,7 +188,6 @@ def done(request):
             try:
                 pdf = PdfReader(pdf_file)
                 for page in pdf.pages:
-                    print(page.extract_text())
                     pdf_text += page.extract_text()
             except:
                 print("Error reading PDF file: " + url)
@@ -196,7 +202,7 @@ def done(request):
         # Split the text string into a list of words
         words = text.split()
 
-        print("Writing " + url)
+        print("Downloading text to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename + ".txt")
         # Write the contents of the url to a text file
         os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file, exist_ok=True)
         file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename + ".txt", "w", encoding="utf-8")
@@ -207,7 +213,7 @@ def done(request):
         
     # This function stores the text on a pdf
     def store_pdf(url):
-        print("Reading " + url)
+        print("Looking for pdfs from " + url)
 
         if url.endswith('.pdf/'):
             url = url[:-1]
@@ -220,10 +226,8 @@ def done(request):
                 headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
                 stream=True,
                 verify=False)
-        print(resource.status_code)
-        
 
-        print("Writing " + url)
+        print("Downloading pdf to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/pdfs/" + filename + ".pdf")
         
         # Write the contents of the url to a pdf file
         os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/pdfs', exist_ok=True)
@@ -232,7 +236,7 @@ def done(request):
         file.close()
         
     def store_doc(url):
-        print("Reading " + url)
+        print("Looking for word docs from " + url)
 
         if url.endswith('.doc/') or url.endswith('.docx/') or url.endswith('.odt/'):
             url = url[:-1]
@@ -245,10 +249,9 @@ def done(request):
                 headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
                 stream=True,
                 verify=False)
-        print(resource.status_code)
         
 
-        print("Writing " + url)
+        print("Downloading word doc to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/docs/" + filename + ".docx")
         
         # Write the contents of the url to a pdf file
         os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/docs', exist_ok=True)
@@ -257,7 +260,7 @@ def done(request):
         file.close()
         
     def store_xls(url):
-        print("Reading " + url)
+        print("Looking for excel sheets from " + url)
 
         if url.endswith('.xls/') or url.endswith('.xlsx/') or url.endswith('.ods/'):
             url = url[:-1]
@@ -270,10 +273,9 @@ def done(request):
                 headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
                 stream=True,
                 verify=False)
-        print(resource.status_code)
         
 
-        print("Writing " + url)
+        print("Downloading excel sheet to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/xls/" + filename + ".xlsx")
         
         # Write the contents of the url to a pdf file
         os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/xls', exist_ok=True)
@@ -282,7 +284,7 @@ def done(request):
         file.close()
         
     def store_ppt(url):
-        print("Reading " + url)
+        print("Looking for powerpoints from " + url)
 
         if url.endswith('.ppt/') or url.endswith('.pptx/') or url.endswith('.odp/'):
             url = url[:-1]
@@ -295,10 +297,9 @@ def done(request):
                 headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
                 stream=True,
                 verify=False)
-        print(resource.status_code)
         
 
-        print("Writing " + url)
+        print("Downloading powerpoint to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/ppts/" + filename + ".pptx")
         
         # Write the contents of the url to a pdf file
         os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/ppts', exist_ok=True)
@@ -307,16 +308,15 @@ def done(request):
         file.close()
         
     def store_images(url):
-        print("Reading " + url)
+        print("Looking for images from " + url)
         
         # Searches for img tags in the html
         soup = BeautifulSoup(requests.get(url).text, features="lxml")
         images = soup.find_all('img')
         
-        if url.endswith('.php/'):
-            parsed_url = urlparse(url)
-            root_url = parsed_url.scheme + "://" + parsed_url.netloc
-            print(root_url)
+        # Get the root url incase the image url is relative
+        parsed_url = urlparse(url)
+        root_url = parsed_url.scheme + "://" + parsed_url.netloc + "/"
             
         # Stores each image in the imgs folder
         for image in images:
@@ -336,7 +336,7 @@ def done(request):
                         verify=False)
                 
                 # Write the contents to a png file
-                print("Writing " + image_url)
+                print("Downloading image to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename)
                 os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/imgs', exist_ok=True)
                 file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename, "wb")
                 file.write(resource.content)
@@ -344,10 +344,63 @@ def done(request):
             except:
                 print("Error reading image: " + image_url)
                 continue
+            
+    def store_videos(url):
+        print("Looking for videos from " + url)
+        
+        # Searches for video tags in the html
+        soup = BeautifulSoup(requests.get(url).text, features="lxml")
+        videos = soup.find_all('video')
+        
+        # Get the root url incase the video url is relative
+        parsed_url = urlparse(url)
+        root_url = parsed_url.scheme + "://" + parsed_url.netloc + "/"
+            
+        # Stores each video in the vids folder
+        for video in videos:
+            try:
+                # Get the video url
+                if video.get('src') is not None:
+                    
+                    # If the video url is a blob, we will have to do something different.
+                    if video.get('src').startswith('blob'):
+                        print("Sorry, can't download blobs yet :(")
+                    else:
+                        video_url = video.get('src')
+                        
+                # If there is no src in the video tag, check for a source tag
+                else:
+                    video_source = video.find_all('source')
+
+                    # If there is a source tag, save whats in the src attribute
+                    if video_source is not None:
+                        video_url = video_source[0].get('src')
+                
+                # If the video url isn't a full url, append it to the parent url
+                if not video_url.startswith('http') and not video_url.startswith('blob'):
+                    video_url = root_url + video_url
+                    
+                # Since files can't have / in their name, we'll replace them with |
+                filename = video_url.replace("/", "!").replace(":", ";")
+                
+                resource = requests.get(video_url, 
+                        headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                        stream=True,
+                        verify=False)
+                
+                # Write the contents to a mp4 file
+                print("Downloading video to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/vids/" + filename)
+                os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/vids', exist_ok=True)
+                file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/vids/" + filename, "wb")
+                file.write(resource.content)
+                file.close()
+            except:
+                print("Error reading video: " + str(video_url))
+                continue
 
     # This function checks if a url has other links and calls store_text on them
     def search_links(url, parent_stack):
-        print("Searching " + url)
+        print("Looking for links from " + url)
         text = requests.get(url).text
 
         # Using BeautifulSoup to parse the html for any links that don't have a # in them
@@ -385,6 +438,8 @@ def done(request):
                         store_ppt(url)
                 if "imgs" in filetypes:
                     store_images(url)
+                if "vids" in filetypes:
+                    store_videos(url)
                 
             # If there are more links to check, backtrack to the parent url
             if parent_stack:
@@ -397,6 +452,9 @@ def done(request):
         # Search for images on current page before checking links
         if "imgs" in filetypes:
             store_images(url)
+            
+        if "vids" in filetypes:
+            store_videos(url)
         
         # Iterate over each link and check its file type
         for link in links:
