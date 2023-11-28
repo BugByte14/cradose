@@ -320,6 +320,25 @@ def done(request):
         print()
         print("Looking for images from " + url)
         
+        # If the url is a direct link to an image, we'll just download it
+        if url.endswith('.jpg') or url.endswith('.jpeg') or url.endswith('.png') or url.endswith('.gif') or url.endswith('.svg') or url.endswith('.ico') or url.endswith('webp'):
+            
+            # Since files can't have / in their name, we'll replace them with |
+            filename = url.replace("/", "!").replace(":", ";")
+                
+            resource = requests.get(url, 
+                    headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                    stream=True,
+                    verify=False)
+                
+            # Write the contents to a png file
+            print("Downloading image to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename)
+            os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/imgs', exist_ok=True)
+            file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename, "wb")
+            file.write(resource.content)
+            file.close()
+            return
+        
         # Searches for img tags in the html
         soup = BeautifulSoup(requests.get(url).text, features="lxml")
         images = soup.find_all('img')
@@ -374,6 +393,24 @@ def done(request):
         print()
         print("Looking for videos from " + url)
         
+        if url.endswith('.mp4') or url.endswith('.webm') or url.endswith('.ogg') or url.endswith('.mpg') or url.endswith('.mpeg') or url.endswith('.avi') or url.endswith('.mov') or url.endswith('.wmv') or url.endswith('.flv'):
+                
+                # Since files can't have / in their name, we'll replace them with |
+                filename = url.replace("/", "!").replace(":", ";")
+                    
+                resource = requests.get(url, 
+                        headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                        stream=True,
+                        verify=False)
+                    
+                # Write the contents to a mp4 file
+                print("Downloading video to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/vids/" + filename)
+                os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/vids', exist_ok=True)
+                file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/vids/" + filename, "wb")
+                file.write(resource.content)
+                file.close()
+                return
+        
         # Searches for video tags in the html
         soup = BeautifulSoup(requests.get(url).text, features="lxml")
         videos = soup.find_all('video')
@@ -427,6 +464,24 @@ def done(request):
     def store_audios(url):
         print()
         print("Looking for audio from " + url)
+        
+        if url.endswith('.mp3') or url.endswith('.wav') or url.endswith('.aac') or url.endswith('.ogg') or url.endswith('.wma') or url.endswith('.flac'):
+                    
+            # Since files can't have / in their name, we'll replace them with |
+            filename = url.replace("/", "!").replace(":", ";")
+                
+            resource = requests.get(url, 
+                    headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                    stream=True,
+                    verify=False)
+                
+            # Write the contents to a mp3 file
+            print("Downloading audio to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/mp3s/" + filename)
+            os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/mp3s', exist_ok=True)
+            file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/mp3s/" + filename, "wb")
+            file.write(resource.content)
+            file.close()
+            return
         
         # Searches for audio tags in the html
         soup = BeautifulSoup(requests.get(url).text, features="lxml")
@@ -493,7 +548,7 @@ def done(request):
 
         # Remove any links that don't start with the parent url and any links that are just anchors
         links = [link for link in links if "#" not in link.get('href')]
-        links = [link for link in links if link.get('href').startswith(parent_url)]
+        links = [link for link in links if link.get('href').startswith(parent_url) or not link.get('href').startswith('http') or not link.get('href').startswith('www.')]
 
         # If there are no links on the page, just store the text and backtrack
         if not links:
@@ -544,6 +599,7 @@ def done(request):
         
         # Iterate over each link and check its file type
         for link in links:
+            print("Found link: " + link.get('href'))
             try:
                 # Make sure the link stays on the parent domain and hasn't already been checked
                 if link.get('href') not in links_list and link.get('href') != parent_url:
@@ -597,7 +653,9 @@ def done(request):
                         if "ppts" in filetypes:
                             store_ppt(link.get('href'))
                             
-                    elif link.get('href').endswith('.jpg') or link.get('href').endswith('.jpeg') or link.get('href').endswith('.png') or link.get('href').endswith('.gif') or link.get('href').endswith('.svg') or link.get('href').endswith('.ico') or link.get('href').endwith('webp'):
+                    elif link.get('href').endswith('.jpg') or link.get('href').endswith('.jpeg') or link.get('href').endswith('.png') or link.get('href').endswith('.gif') or link.get('href').endswith('.svg') or link.get('href').endswith('.ico') or link.get('href').endswith('webp'):
+                        if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
+                            link['href'] = parent_url + "/" + link.get('href')
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
@@ -622,9 +680,9 @@ def done(request):
                     # If the link is a different type (such as an image) we just ignore it
                     else:
                         continue
-            except:
-                err_file = open(str(BASE_DIR) + "/Output/Errors/" + parent_url_file + ".txt", "a")
-                err_file.write("Ignored " + link.get('href') + "\n")
+            except Exception as e:
+                err_file = open(str(BASE_DIR) + "/Output/Errors/" + parent_url_file + ".txt", "a+")
+                err_file.write("Ignored " + link.get('href') + " due to " + str(e) + "\n")
                 continue
 
         # If there are no more links to visit, backtrack to the parent URL
@@ -636,4 +694,5 @@ def done(request):
     if "htmls" in filetypes:
         index()
         count_words()
+    print()
     return redirect('search')
