@@ -4,6 +4,7 @@
 # Test data
 ./Output/Crawled Data/*
 ./Output/Document Sizes/*
+./Output/Errors/*
 ./Output/Inverted Indexes/*
 
 db.sqlite3
