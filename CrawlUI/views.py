@@ -58,6 +58,7 @@ def done(request):
     
     # This function counts the number of words in each document
     def count_words():
+        print()
         print("Counting words in " + parent_url_file)
         
         #This is where we will store the hashmap of documents and there size
@@ -76,6 +77,7 @@ def done(request):
     
     # Creates an inverse index of all the words in the crawled files
     def index():
+        print()
         print("Indexing " + parent_url_file)
         
         #This is where we will store a hashmap of lists that contain the document number each word appears in and the corresponding frequency
@@ -128,6 +130,7 @@ def done(request):
         return word.isalpha() and not has_digit(word) and not has_punctuation(word) and not has_url(word)
     
     def remove_junk(url):
+        print()
         print("Cleaning up " + url)
         
         filename = url.replace("/", "!").replace(":", ";")
@@ -159,6 +162,7 @@ def done(request):
         
     # This function stores the source code of a url
     def store_src(url):
+        print()
         print("Looking for the source code for " + url)
 
         # Since files can't have / in their name, we'll replace them with |
@@ -176,6 +180,7 @@ def done(request):
         
     # This function stores the visible text of a url
     def store_html_text(url):
+        print()
         print("Looking for text on " + url)
 
         # Since files can't have / in their name, we'll replace them with |
@@ -213,6 +218,7 @@ def done(request):
         
     # This function stores the text on a pdf
     def store_pdf(url):
+        print()
         print("Looking for pdfs from " + url)
 
         if url.endswith('.pdf/'):
@@ -236,6 +242,7 @@ def done(request):
         file.close()
         
     def store_doc(url):
+        print()
         print("Looking for word docs from " + url)
 
         if url.endswith('.doc/') or url.endswith('.docx/') or url.endswith('.odt/'):
@@ -260,6 +267,7 @@ def done(request):
         file.close()
         
     def store_xls(url):
+        print()
         print("Looking for excel sheets from " + url)
 
         if url.endswith('.xls/') or url.endswith('.xlsx/') or url.endswith('.ods/'):
@@ -284,6 +292,7 @@ def done(request):
         file.close()
         
     def store_ppt(url):
+        print()
         print("Looking for powerpoints from " + url)
 
         if url.endswith('.ppt/') or url.endswith('.pptx/') or url.endswith('.odp/'):
@@ -308,6 +317,7 @@ def done(request):
         file.close()
         
     def store_images(url):
+        print()
         print("Looking for images from " + url)
         
         # Searches for img tags in the html
@@ -361,6 +371,7 @@ def done(request):
                 continue
             
     def store_videos(url):
+        print()
         print("Looking for videos from " + url)
         
         # Searches for video tags in the html
@@ -414,6 +425,7 @@ def done(request):
                 continue
             
     def store_audios(url):
+        print()
         print("Looking for audio from " + url)
         
         # Searches for audio tags in the html
@@ -468,6 +480,7 @@ def done(request):
 
     # This function checks if a url has other links and calls store_text on them
     def search_links(url, parent_stack):
+        print()
         print("Looking for links from " + url)
         text = requests.get(url).text
 
