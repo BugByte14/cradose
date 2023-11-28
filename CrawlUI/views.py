@@ -2,6 +2,7 @@ import os
 import io
 import requests
 import urllib3
+import zipfile
 from django.shortcuts import render, redirect
 from Cradose.settings import BASE_DIR
 from urllib.parse import urlparse
@@ -51,6 +52,24 @@ def done(request):
         parent_url_file = parent_url[:-1].replace("/", "!").replace(":", ";")
     else:
         parent_url_file = parent_url.replace("/", "!").replace(":", ";")
+        
+    # Whether or not the files should be compressed
+    global compress
+    compress = request.POST.get('compression', "no-zip")
+    
+    # Directory to store the crawled files
+    global output_dir
+    if compress == "zip":
+        output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + ".zip"
+        zip_file = zipfile.ZipFile(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + ".zip", "w", zipfile.ZIP_DEFLATED)
+        zip_file.close()
+    elif compress == "p-zip":
+        output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + ".zip"
+        zip_file = zipfile.ZipFile(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + ".zip", "w", zipfile.ZIP_DEFLATED)
+        zip_file.setpassword(request.POST['password'].encode())
+        zip_file.close()
+    else:
+        output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file
     
     # This will store links we've already checked to prevent duplicates
     global links_list
@@ -65,10 +84,10 @@ def done(request):
         doc_sizes = {}
         
         #Iterating over each file in the directory
-        files = [filename for filename in sorted(os.listdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file)) if not os.path.isdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename)]
+        files = [filename for filename in sorted(os.listdir(str(output_dir))) if not os.path.isdir(str(output_dir) + "/" + filename)]
         for filename in files:
             url = filename.replace("!", "/").replace(";", ":").replace(".txt", "").replace(parent_url,'/')
-            doc_sizes[url] = len(open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename, "r", encoding="utf-8", errors="replace").read().split())
+            doc_sizes[url] = len(open(str(output_dir) + "/" + filename, "r", encoding="utf-8", errors="replace").read().split())
             
         #Create a txt file to store the size of each document for later
         with open(str(BASE_DIR) + "/Output/Document Sizes/" + parent_url_file + ".txt", "w") as output:
@@ -84,12 +103,12 @@ def done(request):
         inverse_indexes = {}
 
         #Iterating over each file in the directory
-        files = [filename for filename in sorted(os.listdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file)) if not os.path.isdir(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename)]
+        files = [filename for filename in sorted(os.listdir(str(output_dir))) if not os.path.isdir(str(output_dir) + "/" + filename)]
         for filename in files:
             url = filename.replace("!", "/").replace(";", ":").replace(".txt", "").replace(parent_url,'/')
 
             #Splitting the text by words and iterating over each word
-            file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename, "r", encoding="utf-8", errors="replace").read().split()
+            file = open(str(output_dir) + "/" + filename, "r", encoding="utf-8", errors="replace").read().split()
             for word in file:
 
                 #If the word is not in the hashmap (first time it appear in any text) we add it to hashmap with a current count of 1
@@ -134,7 +153,7 @@ def done(request):
         print("Cleaning up " + url)
         
         filename = url.replace("/", "!").replace(":", ";")
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename + ".txt", "r+", encoding="utf-8")
+        file = open(str(output_dir) + "/" + filename + ".txt", "r+", encoding="utf-8")
         text = file.read()
         
         # Split the text string into a list of words
@@ -145,15 +164,6 @@ def done(request):
         
         # Make all words lowercase
         valid_words = [word.lower() for word in valid_words]
-        
-        # Keep only the stem words
-        for word in valid_words:
-            if word.endswith("'s") and word.replace("'s", "") in valid_words:
-                valid_words.remove(word)
-                valid_words.append(word[:-2])
-            elif word.endswith("s") and word.replace("s", "") in valid_words:
-                valid_words.remove(word)
-                valid_words.append(word[:-1])
                 
         file.seek(0)
         file.truncate(0)
@@ -171,12 +181,15 @@ def done(request):
         # Pull the text we want to store from the url
         text = requests.get(url).text
 
-        print("Downloading source code to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/src/" + filename + ".html")
-        # Write the contents of the url to a text file
-        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/src/", exist_ok=True)
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/src/" + filename + ".html", "w", encoding="utf-8")
-        file.write(text)
-        file.close()
+        print("Downloading source code to " + str(output_dir) + "/src/" + filename + ".html")
+        if compress == "zip":
+            with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("/src/" + filename + ".html", text)
+        else:
+            os.makedirs(str(output_dir) + '/src', exist_ok=True)
+            file = open(str(output_dir) + "/src/" + filename + ".html", "w", encoding="utf-8")
+            file.write(text)
+            file.close()
         
     # This function stores the visible text of a url
     def store_html_text(url):
@@ -207,13 +220,18 @@ def done(request):
         # Split the text string into a list of words
         words = text.split()
 
-        print("Downloading text to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename + ".txt")
+        print("Downloading text to " + str(output_dir) + "/" + filename + ".txt")
         # Write the contents of the url to a text file
-        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file, exist_ok=True)
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + filename + ".txt", "w", encoding="utf-8")
-        for word in words:
-            file.write(word + "\n")
-        file.close()
+        if compress == "zip":
+            with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                for word in words:
+                    zip_file.writestr("/htmls/" + filename + ".txt", text)
+        else:
+            os.makedirs(str(output_dir), exist_ok=True)
+            file = open(str(output_dir) + "/" + filename + ".txt", "w", encoding="utf-8")
+            for word in words:
+                file.write(word + "\n")
+            file.close()
         remove_junk(url)
         
     # This function stores the text on a pdf
@@ -233,13 +251,15 @@ def done(request):
                 stream=True,
                 verify=False)
 
-        print("Downloading pdf to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/pdfs/" + filename + ".pdf")
-        
-        # Write the contents of the url to a pdf file
-        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/pdfs', exist_ok=True)
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/pdfs/" + filename + ".pdf", "wb")
-        file.write(resource.content)
-        file.close()
+        print("Downloading pdf to " + str(output_dir) + "/pdfs/" + filename + ".pdf")
+        if compress == "zip":
+            with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("/pdfs/" + filename, resource.content)
+        else:
+            os.makedirs(str(output_dir) + '/pdfs', exist_ok=True)
+            file = open(str(output_dir) + "/pdfs/" + filename, "wb")
+            file.write(resource.content)
+            file.close()
         
     def store_doc(url):
         print()
@@ -258,13 +278,15 @@ def done(request):
                 verify=False)
         
 
-        print("Downloading word doc to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/docs/" + filename + ".docx")
-        
-        # Write the contents of the url to a pdf file
-        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/docs', exist_ok=True)
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/docs/" + filename + ".docx", "wb")
-        file.write(resource.content)
-        file.close()
+        print("Downloading word doc to " + str(output_dir) + "/docs/" + filename + ".docx")
+        if compress == "zip":
+            with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("/docs/" + filename, resource.content)
+        else:
+            os.makedirs(str(output_dir) + '/docs', exist_ok=True)
+            file = open(str(output_dir) + "/docs/" + filename, "wb")
+            file.write(resource.content)
+            file.close()
         
     def store_xls(url):
         print()
@@ -283,13 +305,15 @@ def done(request):
                 verify=False)
         
 
-        print("Downloading excel sheet to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/xls/" + filename + ".xlsx")
-        
-        # Write the contents of the url to a pdf file
-        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/xls', exist_ok=True)
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/xls/" + filename + ".xlsx", "wb")
-        file.write(resource.content)
-        file.close()
+        print("Downloading excel sheet to " + str(output_dir) + "/xls/" + filename + ".xlsx")
+        if compress == "zip":
+            with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("/xls/" + filename, resource.content)
+        else:
+            os.makedirs(str(output_dir) + '/xls', exist_ok=True)
+            file = open(str(output_dir) + "/xls/" + filename, "wb")
+            file.write(resource.content)
+            file.close()
         
     def store_ppt(url):
         print()
@@ -308,13 +332,15 @@ def done(request):
                 verify=False)
         
 
-        print("Downloading powerpoint to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/ppts/" + filename + ".pptx")
-        
-        # Write the contents of the url to a pdf file
-        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/ppts', exist_ok=True)
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/ppts/" + filename + ".pptx", "wb")
-        file.write(resource.content)
-        file.close()
+        print("Downloading powerpoint to " + str(output_dir) + "/ppts/" + filename + ".pptx")
+        if compress == "zip":
+            with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("/ppts/" + filename, resource.content)
+        else:
+            os.makedirs(str(output_dir) + '/ppts', exist_ok=True)
+            file = open(str(output_dir) + "/ppts/" + filename, "wb")
+            file.write(resource.content)
+            file.close()
         
     def store_images(url):
         print()
@@ -332,11 +358,15 @@ def done(request):
                     verify=False)
                 
             # Write the contents to a png file
-            print("Downloading image to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename)
-            os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/imgs', exist_ok=True)
-            file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename, "wb")
-            file.write(resource.content)
-            file.close()
+            print("Downloading image to " + str(output_dir) + "/imgs/" + filename)
+            if compress == "zip":
+                with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                    zip_file.writestr("/imgs/" + filename, resource.content)
+            else:
+                os.makedirs(str(output_dir) + '/imgs', exist_ok=True)
+                file = open(str(output_dir) + "/imgs/" + filename, "wb")
+                file.write(resource.content)
+                file.close()
             return
         
         # Searches for img tags in the html
@@ -380,11 +410,15 @@ def done(request):
                         verify=False)
                 
                 # Write the contents to a png file
-                print("Downloading image to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename)
-                os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/imgs', exist_ok=True)
-                file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/imgs/" + filename, "wb")
-                file.write(resource.content)
-                file.close()
+                print("Downloading image to " + str(output_dir) + "/imgs/" + filename)
+                if compress == "zip":
+                    with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                        zip_file.writestr("/imgs/" + filename, resource.content)
+                else:
+                    os.makedirs(str(output_dir) + '/imgs', exist_ok=True)
+                    file = open(str(output_dir) + "/imgs/" + filename, "wb")
+                    file.write(resource.content)
+                    file.close()
             except:
                 print("Error reading image: " + image_url)
                 continue
@@ -404,11 +438,15 @@ def done(request):
                         verify=False)
                     
                 # Write the contents to a mp4 file
-                print("Downloading video to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/vids/" + filename)
-                os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/vids', exist_ok=True)
-                file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/vids/" + filename, "wb")
-                file.write(resource.content)
-                file.close()
+                print("Downloading video to " + str(output_dir) + "/vids/" + filename)
+                if compress == "zip":
+                    with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                        zip_file.writestr("/vids/" + filename, resource.content)
+                else:
+                    os.makedirs(str(output_dir) + '/vids', exist_ok=True)
+                    file = open(str(output_dir) + "/vids/" + filename, "wb")
+                    file.write(resource.content)
+                    file.close()
                 return
         
         # Searches for video tags in the html
@@ -452,11 +490,15 @@ def done(request):
                         verify=False)
                 
                 # Write the contents to a mp4 file
-                print("Downloading video to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/vids/" + filename)
-                os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/vids', exist_ok=True)
-                file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/vids/" + filename, "wb")
-                file.write(resource.content)
-                file.close()
+                print("Downloading video to " + str(output_dir) + "/vids/" + filename)
+                if compress == "zip":
+                    with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                        zip_file.writestr("/vids/" + filename, resource.content)
+                else:
+                    os.makedirs(str(output_dir) + '/vids', exist_ok=True)
+                    file = open(str(output_dir) + "/vids/" + filename, "wb")
+                    file.write(resource.content)
+                    file.close()
             except:
                 print("Error reading video: " + str(video_url))
                 continue
@@ -476,11 +518,15 @@ def done(request):
                     verify=False)
                 
             # Write the contents to a mp3 file
-            print("Downloading audio to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/mp3s/" + filename)
-            os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/mp3s', exist_ok=True)
-            file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/mp3s/" + filename, "wb")
-            file.write(resource.content)
-            file.close()
+            print("Downloading audio to " + str(output_dir) + "/mp3s/" + filename)
+            if compress == "zip":
+                with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                    zip_file.writestr("/mp3s/" + filename, resource.content)
+            else:
+                os.makedirs(str(output_dir) + '/mp3s', exist_ok=True)
+                file = open(str(output_dir) + "/mp3s/" + filename, "wb")
+                file.write(resource.content)
+                file.close()
             return
         
         # Searches for audio tags in the html
@@ -524,11 +570,15 @@ def done(request):
                         verify=False)
                 
                 # Write the contents to a mp3 file
-                print("Downloading audio to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/mp3s/" + filename)
-                os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/mp3s', exist_ok=True)
-                file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/mp3s/" + filename, "wb")
-                file.write(resource.content)
-                file.close()
+                print("Downloading audio to " + str(output_dir) + "/mp3s/" + filename)
+                if compress == "zip":
+                    with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                        zip_file.writestr("/mp3s/" + filename, resource.content)
+                else:
+                    os.makedirs(str(output_dir) + '/mp3s', exist_ok=True)
+                    file = open(str(output_dir) + "/mp3s/" + filename, "wb")
+                    file.write(resource.content)
+                    file.close()
             except:
                 print("Error reading audio: " + str(audio_url))
                 continue
@@ -550,11 +600,15 @@ def done(request):
                 verify=False)
         
         # Write the contents to a zip file
-        print("Downloading archive to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/zips/" + filename)
-        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/zips', exist_ok=True)
-        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/zips/" + filename, "wb")
-        file.write(resource.content)
-        file.close()
+        print("Downloading archive to " + str(output_dir) + "/zips/" + filename)
+        if compress == "zip":
+            with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("/zips/" + filename, resource.content)
+        else:
+            os.makedirs(str(output_dir) + '/zips', exist_ok=True)
+            file = open(str(output_dir) + "/zips/" + filename, "wb")
+            file.write(resource.content)
+            file.close()
 
     # This function checks if a url has other links and calls store_text on them
     def search_links(url, parent_stack):
