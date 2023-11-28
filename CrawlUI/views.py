@@ -626,6 +626,11 @@ def done(request):
         # Iterate over each link and check its file type
         for link in links:
             print("Found link: " + link.get('href'))
+            
+            # Fixes relative directory links
+            if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
+                link['href'] = parent_url + "/" + link.get('href')
+            
             try:
                 # Make sure the link stays on the parent domain and hasn't already been checked
                 if link.get('href') not in links_list and link.get('href') != parent_url:
@@ -680,8 +685,6 @@ def done(request):
                             store_ppt(link.get('href'))
                             
                     elif link.get('href').lower().endswith('.jpg') or link.get('href').lower().endswith('.jpeg') or link.get('href').lower().endswith('.png') or link.get('href').lower().endswith('.gif') or link.get('href').lower().endswith('.svg') or link.get('href').lower().endswith('.ico') or link.get('href').lower().endswith('webp'):
-                        if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
-                            link['href'] = parent_url + "/" + link.get('href')
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
@@ -689,8 +692,6 @@ def done(request):
                             store_images(link.get('href'))
                             
                     elif link.get('href').lower().endswith('.mp4') or link.get('href').lower().endswith('.webm') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.mpg') or link.get('href').lower().endswith('.mpeg') or link.get('href').lower().endswith('.avi') or link.get('href').lower().endswith('.mov') or link.get('href').lower().endswith('.wmv') or link.get('href').lower().endswith('.flv'):
-                        if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
-                            link['href'] = parent_url + "/" + link.get('href')
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
@@ -698,8 +699,6 @@ def done(request):
                             store_videos(link.get('href'))
                             
                     elif link.get('href').lower().endswith('.mp3') or link.get('href').lower().endswith('.wav') or link.get('href').lower().endswith('.aac') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.wma') or link.get('href').lower().endswith('.flac'):
-                        if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
-                            link['href'] = parent_url + "/" + link.get('href')
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
@@ -707,8 +706,6 @@ def done(request):
                             store_audios(link.get('href'))
                             
                     elif link.get('href').lower().endswith('.zip') or link.get('href').lower().endswith('.rar') or link.get('href').lower().endswith('.tar') or link.get('href').lower().endswith('.gz') or link.get('href').lower().endswith('.7z') or link.get('href').lower().endswith('.xz') or link.get('href').lower().endswith('.bz2'):
-                        if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
-                            link['href'] = parent_url + "/" + link.get('href')
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
