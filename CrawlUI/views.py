@@ -321,7 +321,22 @@ def done(request):
         # Stores each image in the imgs folder
         for image in images:
             try:
-                image_url = image.get('src')
+                # Get the img url
+                if image.get('src') is not None:
+                    
+                    # If the image url is a blob, we will have to do something different.
+                    if image.get('src').startswith('blob'):
+                        print("Sorry, can't download blobs yet :(")
+                    else:
+                        image_url = image.get('src')
+                
+                # If there is no src in the image tag, check for a source tag
+                else:
+                    image_source = image.find_all('source')
+
+                    # If there is a source tag, save whats in the src attribute
+                    if image_source is not None:
+                        image_url = image_source[0].get('src')
                 
                 # If the image url isn't a full url, append it to the parent url
                 if not image_url.startswith('http') and not image_url.startswith('blob'):
@@ -397,6 +412,59 @@ def done(request):
             except:
                 print("Error reading video: " + str(video_url))
                 continue
+            
+    def store_audios(url):
+        print("Looking for audio from " + url)
+        
+        # Searches for audio tags in the html
+        soup = BeautifulSoup(requests.get(url).text, features="lxml")
+        audios = soup.find_all('audio')
+        
+        # Get the root url incase the audio url is relative
+        parsed_url = urlparse(url)
+        root_url = parsed_url.scheme + "://" + parsed_url.netloc + "/"
+            
+        # Stores each audio in the mp3s folder
+        for audio in audios:
+            try:
+                # Get the audio url
+                if audio.get('src') is not None:
+                    
+                    # If the audio url is a blob, we will have to do something different.
+                    if audio.get('src').startswith('blob'):
+                        print("Sorry, can't download blobs yet :(")
+                    else:
+                        audio_url = audio.get('src')
+                        
+                # If there is no src in the audio tag, check for a source tag
+                else:
+                    audio_source = audio.find_all('source')
+
+                    # If there is a source tag, save whats in the src attribute
+                    if audio_source is not None:
+                        audio_url = audio_source[0].get('src')
+                
+                # If the audio url isn't a full url, append it to the parent url
+                if not audio_url.startswith('http') and not audio_url.startswith('blob'):
+                    audio_url = root_url + audio_url
+                    
+                # Since files can't have / in their name, we'll replace them with |
+                filename = audio_url.replace("/", "!").replace(":", ";")
+                
+                resource = requests.get(audio_url, 
+                        headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                        stream=True,
+                        verify=False)
+                
+                # Write the contents to a mp3 file
+                print("Downloading audio to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/mp3s/" + filename)
+                os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/mp3s', exist_ok=True)
+                file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/mp3s/" + filename, "wb")
+                file.write(resource.content)
+                file.close()
+            except:
+                print("Error reading audio: " + str(audio_url))
+                continue
 
     # This function checks if a url has other links and calls store_text on them
     def search_links(url, parent_stack):
@@ -440,6 +508,8 @@ def done(request):
                     store_images(url)
                 if "vids" in filetypes:
                     store_videos(url)
+                if "mp3s" in filetypes:
+                    store_audios(url)
                 
             # If there are more links to check, backtrack to the parent url
             if parent_stack:
@@ -455,6 +525,9 @@ def done(request):
             
         if "vids" in filetypes:
             store_videos(url)
+            
+        if "mp3s" in filetypes:
+            store_audios(url)
         
         # Iterate over each link and check its file type
         for link in links:
