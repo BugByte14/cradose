@@ -301,7 +301,7 @@ def done(request):
         # Since files can't have / in their name, we'll replace them with |
         filename = url.replace("/", "!").replace(":", ";")
         
-        # Pull the text we want to store from the url
+        # Make the request to the url
         resource = requests.get(url, 
                 headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
                 stream=True,
@@ -532,6 +532,29 @@ def done(request):
             except:
                 print("Error reading audio: " + str(audio_url))
                 continue
+            
+    def store_archives(url):
+        print()
+        print("Looking for archives from " + url)
+        
+        if url.endswith('/'):
+            url = url[:-1]
+            
+        # Since files can't have / in their name, we'll replace them with |
+        filename = url.replace("/", "!").replace(":", ";")
+        
+        # Make the request to the url
+        resource = requests.get(url,
+                headers={"Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"},
+                stream=True,
+                verify=False)
+        
+        # Write the contents to a zip file
+        print("Downloading archive to " + str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/zips/" + filename)
+        os.makedirs(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + '/zips', exist_ok=True)
+        file = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/zips/" + filename, "wb")
+        file.write(resource.content)
+        file.close()
 
     # This function checks if a url has other links and calls store_text on them
     def search_links(url, parent_stack):
@@ -578,6 +601,9 @@ def done(request):
                     store_videos(url)
                 if "mp3s" in filetypes:
                     store_audios(url)
+                if parent_url.endswith('.zip') or parent_url.endswith('.rar') or parent_url.endswith('.tar') or parent_url.endswith('.gz') or parent_url.endswith('.7z') or parent_url.endswith('.xz') or parent_url.endswith('.bz2') or parent_url.endswith('.zip/') or parent_url.endswith('.rar/') or parent_url.endswith('.tar/') or parent_url.endswith('.gz/') or parent_url.endswith('.7z/') or parent_url.endswith('.xz/') or parent_url.endswith('.bz2/'):
+                    if "zips" in filetypes:
+                        store_archives(url)
                 
             # If there are more links to check, backtrack to the parent url
             if parent_stack:
@@ -587,7 +613,7 @@ def done(request):
             else:
                 return
         
-        # Search for images on current page before checking links
+        # Search for images, videos, and audios on current page before checking links
         if "imgs" in filetypes:
             store_images(url)
             
@@ -663,6 +689,8 @@ def done(request):
                             store_images(link.get('href'))
                             
                     elif link.get('href').lower().endswith('.mp4') or link.get('href').lower().endswith('.webm') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.mpg') or link.get('href').lower().endswith('.mpeg') or link.get('href').lower().endswith('.avi') or link.get('href').lower().endswith('.mov') or link.get('href').lower().endswith('.wmv') or link.get('href').lower().endswith('.flv'):
+                        if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
+                            link['href'] = parent_url + "/" + link.get('href')
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
@@ -670,11 +698,22 @@ def done(request):
                             store_videos(link.get('href'))
                             
                     elif link.get('href').lower().endswith('.mp3') or link.get('href').lower().endswith('.wav') or link.get('href').lower().endswith('.aac') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.wma') or link.get('href').lower().endswith('.flac'):
+                        if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
+                            link['href'] = parent_url + "/" + link.get('href')
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
                         if "mp3s" in filetypes:
                             store_audios(link.get('href'))
+                            
+                    elif link.get('href').lower().endswith('.zip') or link.get('href').lower().endswith('.rar') or link.get('href').lower().endswith('.tar') or link.get('href').lower().endswith('.gz') or link.get('href').lower().endswith('.7z') or link.get('href').lower().endswith('.xz') or link.get('href').lower().endswith('.bz2'):
+                        if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
+                            link['href'] = parent_url + "/" + link.get('href')
+                        links_list.append(link.get('href'))
+                        if "srcs" in filetypes:
+                            store_src(link.get('href'))
+                        if "zips" in filetypes:
+                            store_archives(link.get('href'))
                             
                             
                     # If the link is a different type (such as an image) we just ignore it
