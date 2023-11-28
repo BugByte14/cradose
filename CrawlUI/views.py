@@ -549,7 +549,7 @@ def done(request):
                 if link.get('href') not in links_list and link.get('href') != parent_url:
                     
                     # If the link is a html file, php file, or a directory, we'll store the text and check for more links
-                    if link.get('href').endswith('.html') or link.get('href').endswith('.htm') or link.get('href').endswith('.php') or link.get('href').endswith('/') or link.get('href').endswith('htm/') or link.get('href').endswith('html/') or link.get('href').endswith('php/'):
+                    if link.get('href').endswith('.html') or link.get('href').endswith('.htm') or link.get('href').endswith('.php') or link.get('href').endswith('/'):
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
@@ -559,7 +559,7 @@ def done(request):
                         search_links(link.get('href'), parent_stack)
                     
                     # If the link is a txt file, we'll just store the text
-                    elif link.get('href').endswith('.txt') or link.get('href').endswith('.txt/'):
+                    elif link.get('href').endswith('.txt'):
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
@@ -567,7 +567,7 @@ def done(request):
                             store_html_text(link.get('href'))
                         
                     # If the link is a pdf file, we'll just store the text (after preprocessing)
-                    elif link.get('href').endswith('.pdf') or link.get('href').endswith('.pdf/'): 
+                    elif link.get('href').endswith('.pdf'): 
                         links_list.append(link.get('href'))
                         if "src" in filetypes:
                             store_src(link.get('href'))
@@ -576,27 +576,49 @@ def done(request):
                         if "pdfs" in filetypes:
                             store_pdf(link.get('href'))
                             
-                    elif link.get('href').endswith('.doc') or link.get('href').endswith('.docx') or link.get('href').endswith('.odt') or link.get('href').endswith('.doc/') or link.get('href').endswith('.docx/') or link.get('href').endswith('.odt/'):
+                    elif link.get('href').endswith('.doc') or link.get('href').endswith('.docx') or link.get('href').endswith('.odt'):
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
                         if "docs" in filetypes:
                             store_doc(link.get('href'))
                             
-                    elif link.get('href').endswith('.xls') or link.get('href').endswith('.xlsx') or link.get('href').endswith('.ods') or link.get('href').endswith('.xls/') or link.get('href').endswith('.xlsx/') or link.get('href').endswith('.ods/'):
+                    elif link.get('href').endswith('.xls') or link.get('href').endswith('.xlsx') or link.get('href').endswith('.ods'):
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
                         if "xls" in filetypes:
                             store_xls(link.get('href'))
                             
-                    elif link.get('href').endswith('.ppt') or link.get('href').endswith('.pptx') or link.get('href').endswith('.odp') or link.get('href').endswith('.ppt/') or link.get('href').endswith('.pptx/') or link.get('href').endswith('.odp/'):
+                    elif link.get('href').endswith('.ppt') or link.get('href').endswith('.pptx') or link.get('href').endswith('.odp'):
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
                         if "ppts" in filetypes:
                             store_ppt(link.get('href'))
-
+                            
+                    elif link.get('href').endswith('.jpg') or link.get('href').endswith('.jpeg') or link.get('href').endswith('.png') or link.get('href').endswith('.gif') or link.get('href').endswith('.svg') or link.get('href').endswith('.ico') or link.get('href').endwith('webp'):
+                        links_list.append(link.get('href'))
+                        if "srcs" in filetypes:
+                            store_src(link.get('href'))
+                        if "imgs" in filetypes:
+                            store_images(link.get('href'))
+                            
+                    elif link.get('href').endswith('.mp4') or link.get('href').endswith('.webm') or link.get('href').endswith('.ogg') or link.get('href').endswith('.mpg') or link.get('href').endswith('.mpeg') or link.get('href').endswith('.avi') or link.get('href').endswith('.mov') or link.get('href').endswith('.wmv') or link.get('href').endswith('.flv'):
+                        links_list.append(link.get('href'))
+                        if "srcs" in filetypes:
+                            store_src(link.get('href'))
+                        if "vids" in filetypes:
+                            store_videos(link.get('href'))
+                            
+                    elif link.get('href').endswith('.mp3') or link.get('href').endswith('.wav') or link.get('href').endswith('.aac') or link.get('href').endswith('.ogg') or link.get('href').endswith('.wma') or link.get('href').endswith('.flac'):
+                        links_list.append(link.get('href'))
+                        if "srcs" in filetypes:
+                            store_src(link.get('href'))
+                        if "mp3s" in filetypes:
+                            store_audios(link.get('href'))
+                            
+                            
                     # If the link is a different type (such as an image) we just ignore it
                     else:
                         continue
