@@ -1,5 +1,6 @@
 import os
 import io
+import pyzipper
 import requests
 import urllib3
 import zipfile
@@ -59,15 +60,17 @@ def done(request):
     
     # Directory to store the crawled files
     global output_dir
+    global password
     if compress == "zip":
         output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + ".zip"
         zip_file = zipfile.ZipFile(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + ".zip", "w", zipfile.ZIP_DEFLATED)
         zip_file.close()
-    elif compress == "p-zip":
+    elif compress == "pzip":
         output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + ".zip"
-        zip_file = zipfile.ZipFile(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + ".zip", "w", zipfile.ZIP_DEFLATED)
-        zip_file.setpassword(request.POST['password'].encode())
-        zip_file.close()
+        password = request.POST['password'].encode()
+        with pyzipper.AESZipFile(str(output_dir), "w", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+            zip_file.setpassword(password)
+            zip_file.close()
     else:
         output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file
     
@@ -77,6 +80,12 @@ def done(request):
     
     # This function counts the number of words in each document
     def count_words():
+        
+        # If the files are compressed, we can't count the words
+        if compress == "zip" or compress == "pzip":
+            print("Sorry, can't count words in compressed files yet :(")
+            return
+        
         print()
         print("Counting words in " + parent_url_file)
         
@@ -96,6 +105,12 @@ def done(request):
     
     # Creates an inverse index of all the words in the crawled files
     def index():
+        
+        # If the files are compressed, we can't index them
+        if compress =="zip" or compress == "pzip":
+            print("Sorry, can't index compressed files yet :(")
+            return
+
         print()
         print("Indexing " + parent_url_file)
         
@@ -149,6 +164,12 @@ def done(request):
         return word.isalpha() and not has_digit(word) and not has_punctuation(word) and not has_url(word)
     
     def remove_junk(url):
+        
+        # If the files are compressed, we can't remove junk from them
+        if compress == "zip" or compress == "pzip":
+            print("Sorry, can't remove junk from compressed files yet :(")
+            return
+        
         print()
         print("Cleaning up " + url)
         
@@ -179,16 +200,20 @@ def done(request):
         filename = url.replace("/", "!").replace(":", ";")
 
         # Pull the text we want to store from the url
-        text = requests.get(url).text
+        code = requests.get(url).text
 
         print("Downloading source code to " + str(output_dir) + "/src/" + filename + ".html")
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
-                zip_file.writestr("/src/" + filename + ".html", text)
+                zip_file.writestr("/src/" + filename + ".html", code)
+        elif compress == "pzip":
+            with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                zip_file.setpassword(password)
+                zip_file.writestr("/src/" + filename + ".html", code)
         else:
             os.makedirs(str(output_dir) + '/src', exist_ok=True)
             file = open(str(output_dir) + "/src/" + filename + ".html", "w", encoding="utf-8")
-            file.write(text)
+            file.write(code)
             file.close()
         
     # This function stores the visible text of a url
@@ -225,7 +250,12 @@ def done(request):
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 for word in words:
-                    zip_file.writestr("/htmls/" + filename + ".txt", text)
+                    zip_file.writestr(filename + ".txt", text)
+        elif compress == "pzip":
+            with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                zip_file.setpassword(password)
+                for word in words:
+                    zip_file.writestr(filename + ".txt", text)
         else:
             os.makedirs(str(output_dir), exist_ok=True)
             file = open(str(output_dir) + "/" + filename + ".txt", "w", encoding="utf-8")
@@ -255,6 +285,10 @@ def done(request):
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/pdfs/" + filename, resource.content)
+        elif compress == "pzip":
+            with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                zip_file.setpassword(password)
+                zip_file.writestr("/pdfs/" + filename, resource.content)
         else:
             os.makedirs(str(output_dir) + '/pdfs', exist_ok=True)
             file = open(str(output_dir) + "/pdfs/" + filename, "wb")
@@ -281,6 +315,10 @@ def done(request):
         print("Downloading word doc to " + str(output_dir) + "/docs/" + filename + ".docx")
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("/docs/" + filename, resource.content)
+        elif compress == "pzip":
+            with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                zip_file.setpassword(password)
                 zip_file.writestr("/docs/" + filename, resource.content)
         else:
             os.makedirs(str(output_dir) + '/docs', exist_ok=True)
@@ -309,6 +347,10 @@ def done(request):
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/xls/" + filename, resource.content)
+        elif compress == "pzip":
+            with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                zip_file.setpassword(password)
+                zip_file.writestr("/xls/" + filename, resource.content)
         else:
             os.makedirs(str(output_dir) + '/xls', exist_ok=True)
             file = open(str(output_dir) + "/xls/" + filename, "wb")
@@ -336,6 +378,10 @@ def done(request):
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/ppts/" + filename, resource.content)
+        elif compress == "pzip":
+            with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                zip_file.setpassword(password)
+                zip_file.writestr("/ppts/" + filename, resource.content)
         else:
             os.makedirs(str(output_dir) + '/ppts', exist_ok=True)
             file = open(str(output_dir) + "/ppts/" + filename, "wb")
@@ -361,6 +407,10 @@ def done(request):
             print("Downloading image to " + str(output_dir) + "/imgs/" + filename)
             if compress == "zip":
                 with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                    zip_file.writestr("/imgs/" + filename, resource.content)
+            elif compress == "pzip":
+                with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                    zip_file.setpassword(password)
                     zip_file.writestr("/imgs/" + filename, resource.content)
             else:
                 os.makedirs(str(output_dir) + '/imgs', exist_ok=True)
@@ -414,6 +464,10 @@ def done(request):
                 if compress == "zip":
                     with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                         zip_file.writestr("/imgs/" + filename, resource.content)
+                elif compress == "pzip":
+                    with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                        zip_file.setpassword(password)
+                        zip_file.writestr("/imgs/" + filename, resource.content)
                 else:
                     os.makedirs(str(output_dir) + '/imgs', exist_ok=True)
                     file = open(str(output_dir) + "/imgs/" + filename, "wb")
@@ -441,6 +495,10 @@ def done(request):
                 print("Downloading video to " + str(output_dir) + "/vids/" + filename)
                 if compress == "zip":
                     with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                        zip_file.writestr("/vids/" + filename, resource.content)
+                elif compress == "pzip":
+                    with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                        zip_file.setpassword(password)
                         zip_file.writestr("/vids/" + filename, resource.content)
                 else:
                     os.makedirs(str(output_dir) + '/vids', exist_ok=True)
@@ -494,6 +552,10 @@ def done(request):
                 if compress == "zip":
                     with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                         zip_file.writestr("/vids/" + filename, resource.content)
+                elif compress == "pzip":
+                    with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                        zip_file.setpassword(password)
+                        zip_file.writestr("/vids/" + filename, resource.content)
                 else:
                     os.makedirs(str(output_dir) + '/vids', exist_ok=True)
                     file = open(str(output_dir) + "/vids/" + filename, "wb")
@@ -521,6 +583,10 @@ def done(request):
             print("Downloading audio to " + str(output_dir) + "/mp3s/" + filename)
             if compress == "zip":
                 with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                    zip_file.writestr("/mp3s/" + filename, resource.content)
+            elif compress == "pzip":
+                with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                    zip_file.setpassword(password)
                     zip_file.writestr("/mp3s/" + filename, resource.content)
             else:
                 os.makedirs(str(output_dir) + '/mp3s', exist_ok=True)
@@ -574,6 +640,10 @@ def done(request):
                 if compress == "zip":
                     with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                         zip_file.writestr("/mp3s/" + filename, resource.content)
+                elif compress == "pzip":
+                    with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                        zip_file.setpassword(password)
+                        zip_file.writestr("/mp3s/" + filename, resource.content)
                 else:
                     os.makedirs(str(output_dir) + '/mp3s', exist_ok=True)
                     file = open(str(output_dir) + "/mp3s/" + filename, "wb")
@@ -603,6 +673,10 @@ def done(request):
         print("Downloading archive to " + str(output_dir) + "/zips/" + filename)
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr("/zips/" + filename, resource.content)
+        elif compress == "pzip":
+            with pyzipper.AESZipFile(output_dir, "a", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zip_file:
+                zip_file.setpassword(password)
                 zip_file.writestr("/zips/" + filename, resource.content)
         else:
             os.makedirs(str(output_dir) + '/zips', exist_ok=True)
@@ -781,8 +855,11 @@ def done(request):
 
     # Search for all links on the page
     search_links(parent_url, [])
+    
+    # Perform the indexing and word counting if the user wants html text (for the search engine)
     if "htmls" in filetypes:
         index()
         count_words()
+    
     print()
     return redirect('search')

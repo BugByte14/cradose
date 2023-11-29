@@ -55,6 +55,14 @@
                 <input type="password" name="password" autocomplete="false"><br>
             </div>
             <input type="radio" name="compression" value="no-zip" onclick="closePasswordWindow()"> Do not compress<br>
+            <script>
+                function openPasswordWindow() {
+                    document.getElementById("password-window").style.display = "block";
+                }
+                function closePasswordWindow() {
+                    document.getElementById("password-window").style.display = "none";
+                }
+            </script>
             <label for="depth">How many levels should the crawler go?</label><br>
             <input type="number" name="depth" min="1" max="10" value="1"><br>
         </form>
