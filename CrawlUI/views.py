@@ -79,6 +79,10 @@ def done(request):
     max_num_links = int(request.POST['num-links'])
     curr_num_links = 0
     
+    global include_external
+    include_external_input = request.POST.get('allow-external', "0")
+    include_external = True if include_external_input == "1" else False
+    
     # This will store links we've already checked to prevent duplicates
     global links_list
     links_list = []
@@ -707,9 +711,12 @@ def done(request):
         # Remove any NoneType elements from the links list
         links = [link for link in links if link.get('href') is not None]
 
-        # Remove any links that don't start with the parent url and any links that are just anchors
+        # Remove any links that are just anchors
         links = [link for link in links if "#" not in link.get('href')]
-        links = [link for link in links if link.get('href').startswith(parent_url) or not link.get('href').startswith('http') or not link.get('href').startswith('www.')]
+        
+        # If the user doesn't want to include external links, we'll remove them
+        if not include_external:
+            links = [link for link in links if link.get('href').startswith(parent_url) or (not link.get('href').startswith('http') and not link.get('href').startswith('www.'))]
 
         # If there are no links on the page or the url is the same as the parent url, store the selected content
         if not links or url == parent_url:
@@ -775,8 +782,8 @@ def done(request):
         for link in links:
             
             # Fixes relative directory links
-            if not link.get('href').startswith('http') and not link.get('href').startswith(parent_url):
-                link['href'] = parent_url + "/" + link.get('href')
+            if not link.get('href').startswith('http') and not link.get('href').startswith(url):
+                link['href'] = url + "/" + link.get('href') if not url.endswith('/') else url + link.get('href')
             
             try:
                 # Make sure the link stays on the parent domain and hasn't already been checked

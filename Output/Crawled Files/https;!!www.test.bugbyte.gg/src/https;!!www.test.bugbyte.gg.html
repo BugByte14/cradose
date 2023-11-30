@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>Test Chatroom</title>
+  <style>
+      img {
+          width: 100px;
+      }
+      video {
+          width: 100px;
+      }
+      source {
+          width: 100px;
+      }
+  </style>
+ </head>
+ <body>
+  <h1>Testing Webcrawler Functionality</h1>
+
+  <strong>Link to the image</strong><br>
+  <a href="test.png">Image Download</a><br>
+  <strong>Relative video link in video tag</strong><br>
+  <video controls src="./test.mp4"></video><br>
+  <strong>Relative video link in source tag</strong><br>
+  <video controls>
+      <source src="./test1.mp4">
+  </video><br>
+  <strong>Relative video stored in a blob</strong><br>
+ <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Fetch the video file
+        fetch('test.mp4')
+            .then(response => response.blob())
+            .then(blob => {
+                // Create a Blob object
+                const videoBlob = URL.createObjectURL(blob);
+
+                // Create a video element
+                const videoElement = document.createElement('video');
+                videoElement.controls = true; // Add controls for play/pause, etc.
+                videoElement.src = videoBlob;
+
+                // Append the video element to the body or any desired container
+                document.body.appendChild(videoElement);
+            })
+      });
+  </script>
+  <strong>Relative audio link in audio tag</strong><br>
+  <audio controls src="./test.mp3"></audio><br>
+  <strong>Relative audio link in source tag</strong><br>
+  <audio controls>
+      <source src="./test.mp3">
+  </audio><br>
+  <strong>Archive file stored in a relative directory</strong><br>
+  <a href="test.zip">Download zip file here</a><br>
+  <strong>Relative word doc</strong><br>
+  <a href="test.docx">Download word doc here</a><br>
+</html>
