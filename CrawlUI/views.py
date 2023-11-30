@@ -73,6 +73,11 @@ def done(request):
             zip_file.close()
     else:
         output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file
+        
+    global max_num_links
+    global curr_num_links
+    max_num_links = int(request.POST['num-links'])
+    curr_num_links = 0
     
     # This will store links we've already checked to prevent duplicates
     global links_list
@@ -687,7 +692,12 @@ def done(request):
     # This function checks if a url has other links and calls store_text on them
     def search_links(url, parent_stack):
         print()
+        print()
         print("Looking for links from " + url)
+        
+        global curr_num_links
+        
+        # Pull the text we want to store from the url
         text = requests.get(url).text
 
         # Using BeautifulSoup to parse the html for any links that don't have a # in them
@@ -701,11 +711,18 @@ def done(request):
         links = [link for link in links if "#" not in link.get('href')]
         links = [link for link in links if link.get('href').startswith(parent_url) or not link.get('href').startswith('http') or not link.get('href').startswith('www.')]
 
-        # If there are no links on the page, just store the text and backtrack
-        if not links:
+        # If there are no links on the page or the url is the same as the parent url, store the selected content
+        if not links or url == parent_url:
             
             # Make sure we haven't already checked this url
             if url not in links_list:
+                
+                # If the user only wanted to store one url, we'll stop here
+                curr_num_links += 1
+                if curr_num_links > max_num_links:
+                    print("Reached max number of links")
+                    return
+                
                 links_list.append(url)
                 if "srcs" in filetypes:
                     store_src(url)
@@ -733,7 +750,10 @@ def done(request):
                     if "zips" in filetypes:
                         store_archives(url)
                 
-            # If there are more links to check, backtrack to the parent url
+        # If there are no links on the page, backtrack to the last link or exit
+        if not links:
+            
+            # If there are links in the parent stack, backtrack to the last link
             if parent_stack:
                 return search_links(parent_stack.pop(), parent_stack)
             
@@ -753,18 +773,23 @@ def done(request):
         
         # Iterate over each link and check its file type
         for link in links:
-            print("Found link: " + link.get('href'))
             
             # Fixes relative directory links
-            if not link.get('href').startswith('http') or not link.get('href').startswith(parent_url):
+            if not link.get('href').startswith('http') and not link.get('href').startswith(parent_url):
                 link['href'] = parent_url + "/" + link.get('href')
             
             try:
                 # Make sure the link stays on the parent domain and hasn't already been checked
                 if link.get('href') not in links_list and link.get('href') != parent_url:
                     
+                    print("Found link: " + link.get('href'))
+                    
                     # If the link is a html file, php file, or a directory, we'll store the text and check for more links
                     if link.get('href').lower().endswith('.html') or link.get('href').lower().endswith('.htm') or link.get('href').lower().endswith('.php') or link.get('href').lower().endswith('/'):
+                        curr_num_links += 1
+                        if curr_num_links > max_num_links:
+                            print("Reached max number of links")
+                            return
                         links_list.append(link.get('href'))
                         if "srcs" in filetypes:
                             store_src(link.get('href'))
