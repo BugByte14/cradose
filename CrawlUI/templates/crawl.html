@@ -35,6 +35,38 @@
                 <input type="text" name="url" placeholder="Enter URL">
                 <button type="submit" name="submit-crawl">Crawl</button><br>
             </div>
+            <hr>
+            <label>Which file types should be saved?</label><br>
+            <input type="checkbox" name="srcs" value="1"> Web Page Source Codes<br>
+            <input type="checkbox" name="htmls" value="1"> Web Page Contents (For Searching)<br>
+            <input type="checkbox" name="pdfs" value="1"> PDF Files<br>
+            <input type="checkbox" name="docs" value="1"> Word Documents<br>
+            <input type="checkbox" name="xls" value="1"> Excel Spreadsheets<br>
+            <input type="checkbox" name="ppts" value="1"> PowerPoint Presentations<br>
+            <input type="checkbox" name="imgs" value="1"> Images<br>
+            <input type="checkbox" name="vids" value="1"> Videos<br>
+            <input type="checkbox" name="mp3s" value="1"> Audio Files<br>
+            <input type="checkbox" name="zips" value="1"> Zip Files<br>
+            <label for="compression">How should the output be saved?</label><br>
+            <input type="radio" name="compression" value="zip" onclick="closePasswordWindow()"> Compress to a zip file<br>
+            <input type="radio" name="compression" value="pzip" onclick="openPasswordWindow()"> Compress to a password-protected zip file<br>
+            <div id="password-window" style="display: none;">
+                <label for="password">Enter password:</label><br>
+                <input type="password" name="password" autocomplete="false"><br>
+            </div>
+            <input type="radio" name="compression" value="no-zip" onclick="closePasswordWindow()"> Do not compress<br>
+            <script>
+                function openPasswordWindow() {
+                    document.getElementById("password-window").style.display = "block";
+                }
+                function closePasswordWindow() {
+                    document.getElementById("password-window").style.display = "none";
+                }
+            </script>
+            <label for="depth">How many links should the crawler search?</label><br>
+            <input type="number" name="num-links" min="1" value="5"><br>
+            <label for="allow-external">Should the crawler search external links?</label><br>
+            <input type="checkbox" name="allow-external" value="1"> Allow outbound links<br>(<small><strong>Warning:</strong> this will likely result in a large number irrelevant files and errors</small>)<br>
         </form>
     </div>
 </body>

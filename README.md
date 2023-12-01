@@ -7,8 +7,17 @@ Cradose (CRAwl, DOcument, and SEarch) is a web application built using the Djang
 ## Features
 
 - Crawl any inputted url
-- Select any depth to crawl to
-- Download specific file types
+- Choose which files to download
+  - Source codes
+  - Texts
+  - PDFs
+  - Microsoft word documents, powerpoints, and excel sheets
+  - Images
+  - Videos
+  - Audios
+  - Archives
+- Compress downloaded files into a standard or password protected zip file
+- Limit the amount of links to crawl
 - Index crawled pages
 - Search the downloaded pages for any query
 - Display urls sorted by relevance
@@ -37,4 +46,4 @@ To use the search engine, go to [localhost:8000/search](localhost:8000/search) a
 
 ![search page](./src/img/Search.png)
 
-![results page](./src/img/Results.png)
+<!-- ![results page](./src/img/Results.png) -->

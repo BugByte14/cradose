@@ -1,9 +1,6 @@
 # Cache files
 **/__pycache__
+**Thumbs.db
 
-# Test data
-./Output/Crawled Data/*
-./Output/Document Sizes/*
-./Output/Inverted Indexes/*
-
+# Database
 db.sqlite3
