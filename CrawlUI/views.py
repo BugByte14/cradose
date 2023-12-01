@@ -151,7 +151,7 @@ def done(request):
                         inverse_indexes[word].append([url, 1])
 
         #Create a txt file to store the inverse index for later
-        output = open(str(BASE_DIR) + "/Output/Inverted Indexes/" + parent_url_file + ".txt", "w")
+        output = open(str(BASE_DIR) + "/Output/Inverted Indexes/" + parent_url_file + ".txt", "w", errors="replace")
 
         for word in inverse_indexes:
             output.write(word + ": " + str(inverse_indexes[word]) + "\n" if word != list(inverse_indexes.keys())[-1] else word + ": " + str(inverse_indexes[word]))
@@ -769,13 +769,13 @@ def done(request):
                 return
         
         # Search for images, videos, and audios on current page before checking links
-        if "imgs" in filetypes:
+        if "imgs" in filetypes and url not in links_list:
             store_images(url)
             
-        if "vids" in filetypes:
+        if "vids" in filetypes and url not in links_list:
             store_videos(url)
             
-        if "mp3s" in filetypes:
+        if "mp3s" in filetypes and url not in links_list:
             store_audios(url)
         
         # Iterate over each link and check its file type
