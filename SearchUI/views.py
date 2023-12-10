@@ -71,7 +71,10 @@ def results(request):
 
     for doc in results:
         # Open the document
-        document = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + parent_url_file + doc.replace("/", "!").replace(":", ";") + ".txt", "r", encoding="utf-8", errors="replace").read()
+        if not doc.startswith("http"):
+            document = open(str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file + "/" + parent_url_file + doc[:-1].replace("/", "!").replace(":", ";") + ".txt", "r", encoding="utf-8", errors="replace").read()
+        else:
+            document = open(str(BASE_DIR) + "/Output/Crawled Files/" + doc.replace("/", "!").replace(":", ";") + ".txt", "r", encoding="utf-8", errors="replace").read()
         doc_terms = document.split(" ")
 
         # Convert the document and query to vectors using BOW
