@@ -75,9 +75,9 @@ def done(request):
         output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file
         
     global max_num_links
-    global curr_num_links
+    #global curr_num_links
     max_num_links = int(request.POST['num-links'])
-    curr_num_links = -1
+    curr_num_links = 0
     
     global include_external
     include_external_input = request.POST.get('allow-external', "0")
@@ -694,12 +694,10 @@ def done(request):
             file.close()
 
     # This function checks if a url has other links and calls store_text on them
-    def search_links(url, parent_stack):
+    def search_links(url, parent_stack, curr_num_links=1):
         #print()
         print()
-        print("Crawling " + url)
-        
-        global curr_num_links
+        print("🔗 Link #" + str(curr_num_links) + ": " + url)
         
         # Pull the text we want to store from the url
         text = requests.get(url).text
@@ -750,7 +748,11 @@ def done(request):
             
             # If there are links in the parent stack, backtrack to the last link
             if parent_stack:
-                return search_links(parent_stack.pop(), parent_stack)
+                curr_num_links += 1
+                print("Now the current number of links is " + str(curr_num_links) + ".")
+                if curr_num_links > max_num_links:
+                    raise Exception("🛑 Max number of links reached")
+                return search_links(parent_stack.pop(), parent_stack, curr_num_links)
             
             # If there are no more links to check, we're done
             else:
@@ -759,109 +761,127 @@ def done(request):
         # Iterate over each link and check its file type
         for link in links:
             
-            # Fixes relative directory links (kinda broken rn)
-            if not link.get('href').startswith('http') and not link.get('href').startswith(url):
-                link['href'] = url + "/" + link.get('href') if not url.endswith('/') else url + link.get('href')
+            curr_num_links += 1
+            if curr_num_links > max_num_links:
+                raise Exception("🛑 Max number of links reached")
             
             try:
-                # Make sure the link stays on the parent domain and hasn't already been checked
-                if link.get('href') not in links_list and link.get('href') != parent_url:
-                    
-                    print("🔎 Found link: " + link.get('href'))
-                    
-                    # If the link is a txt file, we'll just store the text
-                    if link.get('href').lower().endswith('.txt'):
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "htmls" in filetypes:
-                            store_html_text(link.get('href'))
-                        
-                    # If the link is a pdf file, we'll just store the text (after preprocessing)
-                    elif link.get('href').lower().endswith('.pdf'): 
-                        if "src" in filetypes:
-                            store_src(link.get('href'))
-                        if "htmls" in filetypes:
-                            store_html_text(link.get('href'))
-                        if "pdfs" in filetypes:
-                            store_pdf(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.doc') or link.get('href').lower().endswith('.docx') or link.get('href').lower().endswith('.odt'):
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "docs" in filetypes:
-                            store_doc(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.xls') or link.get('href').lower().endswith('.xlsx') or link.get('href').lower().endswith('.ods'):
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "xls" in filetypes:
-                            store_xls(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.ppt') or link.get('href').lower().endswith('.pptx') or link.get('href').lower().endswith('.odp'):
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "ppts" in filetypes:
-                            store_ppt(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.jpg') or link.get('href').lower().endswith('.jpeg') or link.get('href').lower().endswith('.png') or link.get('href').lower().endswith('.gif') or link.get('href').lower().endswith('.svg') or link.get('href').lower().endswith('.ico') or link.get('href').lower().endswith('webp'):
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "imgs" in filetypes:
-                            store_images(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.mp4') or link.get('href').lower().endswith('.webm') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.mpg') or link.get('href').lower().endswith('.mpeg') or link.get('href').lower().endswith('.avi') or link.get('href').lower().endswith('.mov') or link.get('href').lower().endswith('.wmv') or link.get('href').lower().endswith('.flv'):
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "vids" in filetypes:
-                            store_videos(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.mp3') or link.get('href').lower().endswith('.wav') or link.get('href').lower().endswith('.aac') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.wma') or link.get('href').lower().endswith('.flac'):
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "mp3s" in filetypes:
-                            store_audios(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.zip') or link.get('href').lower().endswith('.rar') or link.get('href').lower().endswith('.tar') or link.get('href').lower().endswith('.gz') or link.get('href').lower().endswith('.7z') or link.get('href').lower().endswith('.xz') or link.get('href').lower().endswith('.bz2'):
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "zips" in filetypes:
-                            store_archives(link.get('href'))
-                            
-                    # If the link doesn't end in the previous options, it's probably a webpage
-                    else:
-                        try:
-                            curr_num_links += 1
-                            if curr_num_links > max_num_links:
-                                print("Reached max number of links")
-                                return
-                            if "srcs" in filetypes:
-                                store_src(link.get('href'))
-                            if "htmls" in filetypes:
-                                store_html_text(link.get('href'))
-                            if "img" in filetypes:
-                                store_images(link.get('href'))
-                            if "vids" in filetypes:
-                                store_videos(link.get('href'))
-                            if "mp3s" in filetypes:
-                                store_audios(link.get('href'))
-                            parent_stack.append(url)
-                            search_links(link.get('href'), parent_stack)
-                        except:
-                            curr_num_links -= 1
-                            print("⚠️  Error reading link: " + link.get('href'))
-                            continue
-                    
+                print("Searching the next link with a current number of links of " + str(curr_num_links) + ".")
+                search_links(link.get('href'), parent_stack, curr_num_links)
+                
+            # Either the max number of links was reached or the given link couldn't be crawled
             except Exception as e:
-                err_file = open(str(BASE_DIR) + "/Output/Errors/" + parent_url_file + ".txt", "a+")
-                err_file.write("⚠️  Ignored " + link.get('href') + " due to " + str(e) + "\n")
-                continue
-
-        # If there are no more links to visit, backtrack to the parent URL
-        if parent_stack:
-            return search_links(parent_stack.pop(), parent_stack)
+                if e.args[0] == "🛑 Max number of links reached":
+                    raise Exception("🛑 Max number of links reached")
+                else:
+                    print("⚠️  Error reading link: " + link.get('href'))
+                    continue
+            # Fixes relative directory links (kinda broken rn)
+            # if not link.get('href').startswith('http') and not link.get('href').startswith(url):
+            #     link['href'] = url + "/" + link.get('href') if not url.endswith('/') else url + link.get('href')
+            
+            # try:
+            #     # Make sure the link stays on the parent domain and hasn't already been checked
+            #     if link.get('href') not in links_list and link.get('href') != parent_url:
+                    
+            #         print("🔎 Found link: " + link.get('href'))
+                    
+            #         # If the link is a txt file, we'll just store the text
+            #         if link.get('href').lower().endswith('.txt'):
+            #             if "srcs" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "htmls" in filetypes:
+            #                 store_html_text(link.get('href'))
+                        
+            #         # If the link is a pdf file, we'll just store the text (after preprocessing)
+            #         elif link.get('href').lower().endswith('.pdf'): 
+            #             if "src" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "htmls" in filetypes:
+            #                 store_html_text(link.get('href'))
+            #             if "pdfs" in filetypes:
+            #                 store_pdf(link.get('href'))
+                            
+            #         elif link.get('href').lower().endswith('.doc') or link.get('href').lower().endswith('.docx') or link.get('href').lower().endswith('.odt'):
+            #             if "srcs" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "docs" in filetypes:
+            #                 store_doc(link.get('href'))
+                            
+            #         elif link.get('href').lower().endswith('.xls') or link.get('href').lower().endswith('.xlsx') or link.get('href').lower().endswith('.ods'):
+            #             if "srcs" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "xls" in filetypes:
+            #                 store_xls(link.get('href'))
+                            
+            #         elif link.get('href').lower().endswith('.ppt') or link.get('href').lower().endswith('.pptx') or link.get('href').lower().endswith('.odp'):
+            #             if "srcs" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "ppts" in filetypes:
+            #                 store_ppt(link.get('href'))
+                            
+            #         elif link.get('href').lower().endswith('.jpg') or link.get('href').lower().endswith('.jpeg') or link.get('href').lower().endswith('.png') or link.get('href').lower().endswith('.gif') or link.get('href').lower().endswith('.svg') or link.get('href').lower().endswith('.ico') or link.get('href').lower().endswith('webp'):
+            #             if "srcs" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "imgs" in filetypes:
+            #                 store_images(link.get('href'))
+                            
+            #         elif link.get('href').lower().endswith('.mp4') or link.get('href').lower().endswith('.webm') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.mpg') or link.get('href').lower().endswith('.mpeg') or link.get('href').lower().endswith('.avi') or link.get('href').lower().endswith('.mov') or link.get('href').lower().endswith('.wmv') or link.get('href').lower().endswith('.flv'):
+            #             if "srcs" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "vids" in filetypes:
+            #                 store_videos(link.get('href'))
+                            
+            #         elif link.get('href').lower().endswith('.mp3') or link.get('href').lower().endswith('.wav') or link.get('href').lower().endswith('.aac') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.wma') or link.get('href').lower().endswith('.flac'):
+            #             if "srcs" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "mp3s" in filetypes:
+            #                 store_audios(link.get('href'))
+                            
+            #         elif link.get('href').lower().endswith('.zip') or link.get('href').lower().endswith('.rar') or link.get('href').lower().endswith('.tar') or link.get('href').lower().endswith('.gz') or link.get('href').lower().endswith('.7z') or link.get('href').lower().endswith('.xz') or link.get('href').lower().endswith('.bz2'):
+            #             if "srcs" in filetypes:
+            #                 store_src(link.get('href'))
+            #             if "zips" in filetypes:
+            #                 store_archives(link.get('href'))
+                            
+            #         # If the link doesn't end in the previous options, it's probably a webpage
+            #         else:
+            #             try:
+            #                 # curr_num_links += 1
+            #                 # print("We reached " + str(curr_num_links) + " links")
+            #                 # if curr_num_links > max_num_links:
+            #                 #     print("Reached max number of links")
+            #                 #     return
+            #                 if "srcs" in filetypes:
+            #                     store_src(link.get('href'))
+            #                 if "htmls" in filetypes:
+            #                     store_html_text(link.get('href'))
+            #                 if "img" in filetypes:
+            #                     store_images(link.get('href'))
+            #                 if "vids" in filetypes:
+            #                     store_videos(link.get('href'))
+            #                 if "mp3s" in filetypes:
+            #                     store_audios(link.get('href'))
+            #                 parent_stack.append(url)
+            #                 search_links(link.get('href'), parent_stack, curr_num_links)
+            #             except:
+            #                 print("⚠️  Error reading link: " + link.get('href'))
+            #                 continue
+                    
+            # except Exception as e:
+            #     err_file = open(str(BASE_DIR) + "/Output/Errors/" + parent_url_file + ".txt", "a+")
+            #     err_file.write("⚠️  Ignored " + link.get('href') + " due to " + str(e) + "\n")
+            #     continue
 
     # Search for all links on the page
-    search_links(parent_url, [])
+    try:
+        search_links(parent_url, [])
+    except Exception as e:
+        if e.args[0] == "🛑 Max number of links reached":
+            print(e.args[0])
+        else:
+            print("🚨  Something went really wrong")
+            
     
     # Perform the indexing and word counting if the user wants html text (for the search engine)
     if "htmls" in filetypes:
