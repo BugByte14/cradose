@@ -75,9 +75,8 @@ def done(request):
         output_dir = str(BASE_DIR) + "/Output/Crawled Files/" + parent_url_file
         
     global max_num_links
-    global curr_num_links
+    #global curr_num_links
     max_num_links = int(request.POST['num-links'])
-    curr_num_links = 0
     
     global include_external
     include_external_input = request.POST.get('allow-external', "0")
@@ -92,11 +91,11 @@ def done(request):
         
         # If the files are compressed, we can't count the words
         if compress == "zip" or compress == "pzip":
-            print("Sorry, can't count words in compressed files yet :(")
+            print("⚠️  Sorry, can't count words in compressed files yet :(")
             return
         
-        print()
-        print("Counting words in " + parent_url_file)
+        #print()
+        #print("Counting words in " + parent_url_file)
         
         #This is where we will store the hashmap of documents and there size
         doc_sizes = {}
@@ -117,11 +116,11 @@ def done(request):
         
         # If the files are compressed, we can't index them
         if compress =="zip" or compress == "pzip":
-            print("Sorry, can't index compressed files yet :(")
+            print("⚠️  Sorry, can't index compressed files yet :(")
             return
 
-        print()
-        print("Indexing " + parent_url_file)
+        #print()
+        #print("Indexing " + parent_url_file)
         
         #This is where we will store a hashmap of lists that contain the document number each word appears in and the corresponding frequency
         inverse_indexes = {}
@@ -176,11 +175,11 @@ def done(request):
         
         # If the files are compressed, we can't remove junk from them
         if compress == "zip" or compress == "pzip":
-            print("Sorry, can't remove junk from compressed files yet :(")
+            print("⚠️  Sorry, can't remove junk from compressed files yet :(")
             return
         
-        print()
-        print("Cleaning up " + url)
+        #print()
+        print("🧹 Cleaning up " + url)
         
         filename = url.replace("/", "!").replace(":", ";")
         file = open(str(output_dir) + "/" + filename + ".txt", "r+", encoding="utf-8")
@@ -202,8 +201,8 @@ def done(request):
         
     # This function stores the source code of a url
     def store_src(url):
-        print()
-        print("Looking for the source code for " + url)
+        #print()
+        print("🖥️  Looking for the source code from " + url)
 
         # Since files can't have / in their name, we'll replace them with |
         filename = url.replace("/", "!").replace(":", ";")
@@ -211,7 +210,7 @@ def done(request):
         # Pull the text we want to store from the url
         code = requests.get(url).text
 
-        print("Downloading source code to " + str(output_dir) + "/src/" + filename + ".html")
+        #print("Downloading source code to " + str(output_dir) + "/src/" + filename + ".html")
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/src/" + filename + ".html", code)
@@ -227,8 +226,8 @@ def done(request):
         
     # This function stores the visible text of a url
     def store_html_text(url):
-        print()
-        print("Looking for text on " + url)
+        #print()
+        print("📄 Looking for text from " + url)
 
         # Since files can't have / in their name, we'll replace them with |
         filename = url.replace("/", "!").replace(":", ";")
@@ -242,7 +241,7 @@ def done(request):
                 for page in pdf.pages:
                     pdf_text += page.extract_text()
             except:
-                print("Error reading PDF file: " + url)
+                print("⚠️  Error reading PDF file: " + url)
             text = ' '.join(pdf_text.split())
         else:
             text = requests.get(url).text
@@ -254,7 +253,7 @@ def done(request):
         # Split the text string into a list of words
         words = text.split()
 
-        print("Downloading text to " + str(output_dir) + "/" + filename + ".txt")
+        #print("Downloading text to " + str(output_dir) + "/" + filename + ".txt")
         # Write the contents of the url to a text file
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
@@ -275,8 +274,8 @@ def done(request):
         
     # This function stores the text on a pdf
     def store_pdf(url):
-        print()
-        print("Looking for pdfs from " + url)
+        #print()
+        print("📕 Looking for pdfs from " + url)
 
         if url.endswith('.pdf/'):
             url = url[:-1]
@@ -290,7 +289,7 @@ def done(request):
                 stream=True,
                 verify=False)
 
-        print("Downloading pdf to " + str(output_dir) + "/pdfs/" + filename + ".pdf")
+        #print("Downloading pdf to " + str(output_dir) + "/pdfs/" + filename + ".pdf")
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/pdfs/" + filename, resource.content)
@@ -305,8 +304,8 @@ def done(request):
             file.close()
         
     def store_doc(url):
-        print()
-        print("Looking for word docs from " + url)
+        #print()
+        print("📘 Looking for word docs from " + url)
 
         if url.endswith('.doc/') or url.endswith('.docx/') or url.endswith('.odt/'):
             url = url[:-1]
@@ -321,7 +320,7 @@ def done(request):
                 verify=False)
         
 
-        print("Downloading word doc to " + str(output_dir) + "/docs/" + filename + ".docx")
+        #print("Downloading word doc to " + str(output_dir) + "/docs/" + filename + ".docx")
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/docs/" + filename, resource.content)
@@ -336,8 +335,8 @@ def done(request):
             file.close()
         
     def store_xls(url):
-        print()
-        print("Looking for excel sheets from " + url)
+        #print()
+        print("📗 Looking for excel sheets from " + url)
 
         if url.endswith('.xls/') or url.endswith('.xlsx/') or url.endswith('.ods/'):
             url = url[:-1]
@@ -352,7 +351,7 @@ def done(request):
                 verify=False)
         
 
-        print("Downloading excel sheet to " + str(output_dir) + "/xls/" + filename + ".xlsx")
+        #print("Downloading excel sheet to " + str(output_dir) + "/xls/" + filename + ".xlsx")
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/xls/" + filename, resource.content)
@@ -367,8 +366,8 @@ def done(request):
             file.close()
         
     def store_ppt(url):
-        print()
-        print("Looking for powerpoints from " + url)
+        #print()
+        print("📙 Looking for powerpoints from " + url)
 
         if url.endswith('.ppt/') or url.endswith('.pptx/') or url.endswith('.odp/'):
             url = url[:-1]
@@ -383,7 +382,7 @@ def done(request):
                 verify=False)
         
 
-        print("Downloading powerpoint to " + str(output_dir) + "/ppts/" + filename + ".pptx")
+        #print("Downloading powerpoint to " + str(output_dir) + "/ppts/" + filename + ".pptx")
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/ppts/" + filename, resource.content)
@@ -398,8 +397,8 @@ def done(request):
             file.close()
         
     def store_images(url):
-        print()
-        print("Looking for images from " + url)
+        #print()
+        print("📷 Looking for images from " + url)
         
         # If the url is a direct link to an image, we'll just download it
         if url.endswith('.jpg') or url.endswith('.jpeg') or url.endswith('.png') or url.endswith('.gif') or url.endswith('.svg') or url.endswith('.ico') or url.endswith('webp'):
@@ -413,7 +412,7 @@ def done(request):
                     verify=False)
                 
             # Write the contents to a png file
-            print("Downloading image to " + str(output_dir) + "/imgs/" + filename)
+            #print("Downloading image to " + str(output_dir) + "/imgs/" + filename)
             if compress == "zip":
                 with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                     zip_file.writestr("/imgs/" + filename, resource.content)
@@ -444,7 +443,7 @@ def done(request):
                     
                     # If the image url is a blob, we will have to do something different.
                     if image.get('src').startswith('blob'):
-                        print("Sorry, can't download blobs yet :(")
+                        print("⚠️  Sorry, can't download blobs yet :(")
                     else:
                         image_url = image.get('src')
                 
@@ -469,7 +468,7 @@ def done(request):
                         verify=False)
                 
                 # Write the contents to a png file
-                print("Downloading image to " + str(output_dir) + "/imgs/" + filename)
+                #print("Downloading image to " + str(output_dir) + "/imgs/" + filename)
                 if compress == "zip":
                     with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                         zip_file.writestr("/imgs/" + filename, resource.content)
@@ -483,12 +482,12 @@ def done(request):
                     file.write(resource.content)
                     file.close()
             except:
-                print("Error reading image: " + image_url)
+                print("⚠️  Error reading image: " + image_url)
                 continue
             
     def store_videos(url):
-        print()
-        print("Looking for videos from " + url)
+        #print()
+        print("🎬 Looking for videos from " + url)
         
         if url.endswith('.mp4') or url.endswith('.webm') or url.endswith('.ogg') or url.endswith('.mpg') or url.endswith('.mpeg') or url.endswith('.avi') or url.endswith('.mov') or url.endswith('.wmv') or url.endswith('.flv'):
                 
@@ -501,7 +500,7 @@ def done(request):
                         verify=False)
                     
                 # Write the contents to a mp4 file
-                print("Downloading video to " + str(output_dir) + "/vids/" + filename)
+                #print("Downloading video to " + str(output_dir) + "/vids/" + filename)
                 if compress == "zip":
                     with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                         zip_file.writestr("/vids/" + filename, resource.content)
@@ -532,7 +531,7 @@ def done(request):
                     
                     # If the video url is a blob, we will have to do something different.
                     if video.get('src').startswith('blob'):
-                        print("Sorry, can't download blobs yet :(")
+                        print("⚠️  Sorry, can't download blobs yet :(")
                     else:
                         video_url = video.get('src')
                         
@@ -557,7 +556,7 @@ def done(request):
                         verify=False)
                 
                 # Write the contents to a mp4 file
-                print("Downloading video to " + str(output_dir) + "/vids/" + filename)
+                #print("Downloading video to " + str(output_dir) + "/vids/" + filename)
                 if compress == "zip":
                     with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                         zip_file.writestr("/vids/" + filename, resource.content)
@@ -571,12 +570,12 @@ def done(request):
                     file.write(resource.content)
                     file.close()
             except:
-                print("Error reading video: " + str(video_url))
+                print("⚠️  Error reading video: " + str(video_url))
                 continue
             
     def store_audios(url):
-        print()
-        print("Looking for audio from " + url)
+        #print()
+        print("🎧 Looking for audio from " + url)
         
         if url.endswith('.mp3') or url.endswith('.wav') or url.endswith('.aac') or url.endswith('.ogg') or url.endswith('.wma') or url.endswith('.flac'):
                     
@@ -589,7 +588,7 @@ def done(request):
                     verify=False)
                 
             # Write the contents to a mp3 file
-            print("Downloading audio to " + str(output_dir) + "/mp3s/" + filename)
+            #print("Downloading audio to " + str(output_dir) + "/mp3s/" + filename)
             if compress == "zip":
                 with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                     zip_file.writestr("/mp3s/" + filename, resource.content)
@@ -620,7 +619,7 @@ def done(request):
                     
                     # If the audio url is a blob, we will have to do something different.
                     if audio.get('src').startswith('blob'):
-                        print("Sorry, can't download blobs yet :(")
+                        print("⚠️  Sorry, can't download blobs yet :(")
                     else:
                         audio_url = audio.get('src')
                         
@@ -645,7 +644,7 @@ def done(request):
                         verify=False)
                 
                 # Write the contents to a mp3 file
-                print("Downloading audio to " + str(output_dir) + "/mp3s/" + filename)
+                #print("Downloading audio to " + str(output_dir) + "/mp3s/" + filename)
                 if compress == "zip":
                     with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                         zip_file.writestr("/mp3s/" + filename, resource.content)
@@ -659,12 +658,12 @@ def done(request):
                     file.write(resource.content)
                     file.close()
             except:
-                print("Error reading audio: " + str(audio_url))
+                print("⚠️  Error reading audio: " + str(audio_url))
                 continue
             
     def store_archives(url):
-        print()
-        print("Looking for archives from " + url)
+        #print()
+        print("💾 Looking for archives from " + url)
         
         if url.endswith('/'):
             url = url[:-1]
@@ -679,7 +678,7 @@ def done(request):
                 verify=False)
         
         # Write the contents to a zip file
-        print("Downloading archive to " + str(output_dir) + "/zips/" + filename)
+        #print("Downloading archive to " + str(output_dir) + "/zips/" + filename)
         if compress == "zip":
             with zipfile.ZipFile(output_dir, "a", zipfile.ZIP_DEFLATED) as zip_file:
                 zip_file.writestr("/zips/" + filename, resource.content)
@@ -694,12 +693,10 @@ def done(request):
             file.close()
 
     # This function checks if a url has other links and calls store_text on them
-    def search_links(url, parent_stack):
+    def search_links(url, parent_stack, curr_num_links=1):
+        #print()
         print()
-        print()
-        print("Looking for links from " + url)
-        
-        global curr_num_links
+        print("🔗 Link #" + str(curr_num_links) + ": " + url)
         
         # Pull the text we want to store from the url
         text = requests.get(url).text
@@ -717,179 +714,84 @@ def done(request):
         # If the user doesn't want to include external links, we'll remove them
         if not include_external:
             links = [link for link in links if link.get('href').startswith(parent_url) or (not link.get('href').startswith('http') and not link.get('href').startswith('www.'))]
-
-        # If there are no links on the page or the url is the same as the parent url, store the selected content
-        if not links or url == parent_url:
             
-            # Make sure we haven't already checked this url
-            if url not in links_list:
-                
-                # If the user only wanted to store one url, we'll stop here
-                curr_num_links += 1
-                if curr_num_links > max_num_links:
-                    print("Reached max number of links")
-                    return
-                
-                links_list.append(url)
-                if "srcs" in filetypes:
-                    store_src(url)
-                if "htmls" in filetypes:
-                    store_html_text(url)
-                if parent_url.endswith('.pdf') or parent_url.endswith('.pdf/'):
-                    if "pdfs" in filetypes:
-                        store_pdf(url)
-                if parent_url.endswith('.doc') or parent_url.endswith('.docx') or parent_url.endswith('.odt') or parent_url.endswith('.doc/') or parent_url.endswith('.docx/') or parent_url.endswith('.odt/'):
-                    if "docs" in filetypes:
-                        store_doc(url)
-                if parent_url.endswith('.xls') or parent_url.endswith('.xlsx') or parent_url.endswith('.ods') or parent_url.endswith('.xls/') or parent_url.endswith('.xlsx/') or parent_url.endswith('.ods/'):
-                    if "xls" in filetypes:
-                        store_xls(url)
-                if parent_url.endswith('.ppt') or parent_url.endswith('.pptx') or parent_url.endswith('.odp') or parent_url.endswith('.ppt/') or parent_url.endswith('.pptx/') or parent_url.endswith('.odp/'):
-                    if "ppts" in filetypes:
-                        store_ppt(url)
-                if "imgs" in filetypes:
-                    store_images(url)
-                if "vids" in filetypes:
-                    store_videos(url)
-                if "mp3s" in filetypes:
-                    store_audios(url)
-                if parent_url.endswith('.zip') or parent_url.endswith('.rar') or parent_url.endswith('.tar') or parent_url.endswith('.gz') or parent_url.endswith('.7z') or parent_url.endswith('.xz') or parent_url.endswith('.bz2') or parent_url.endswith('.zip/') or parent_url.endswith('.rar/') or parent_url.endswith('.tar/') or parent_url.endswith('.gz/') or parent_url.endswith('.7z/') or parent_url.endswith('.xz/') or parent_url.endswith('.bz2/'):
-                    if "zips" in filetypes:
-                        store_archives(url)
+        # Start by crawling the seed url for selected file types
+        if url not in links_list:
+            if "srcs" in filetypes:
+                store_src(url)
+            if "htmls" in filetypes:
+                store_html_text(url)
+            if parent_url.endswith('.pdf') or parent_url.endswith('.pdf/'):
+                if "pdfs" in filetypes:
+                    store_pdf(url)
+            if parent_url.endswith('.doc') or parent_url.endswith('.docx') or parent_url.endswith('.odt') or parent_url.endswith('.doc/') or parent_url.endswith('.docx/') or parent_url.endswith('.odt/'):
+                if "docs" in filetypes:
+                    store_doc(url)
+            if parent_url.endswith('.xls') or parent_url.endswith('.xlsx') or parent_url.endswith('.ods') or parent_url.endswith('.xls/') or parent_url.endswith('.xlsx/') or parent_url.endswith('.ods/'):
+                if "xls" in filetypes:
+                    store_xls(url)
+            if parent_url.endswith('.ppt') or parent_url.endswith('.pptx') or parent_url.endswith('.odp') or parent_url.endswith('.ppt/') or parent_url.endswith('.pptx/') or parent_url.endswith('.odp/'):
+                if "ppts" in filetypes:
+                    store_ppt(url)
+            if "imgs" in filetypes:
+                store_images(url)
+            if "vids" in filetypes:
+                store_videos(url)
+            if "mp3s" in filetypes:
+                store_audios(url)
+            if parent_url.endswith('.zip') or parent_url.endswith('.rar') or parent_url.endswith('.tar') or parent_url.endswith('.gz') or parent_url.endswith('.7z') or parent_url.endswith('.zip/') or parent_url.endswith('.rar/') or parent_url.endswith('.tar/') or parent_url.endswith('.gz/') or parent_url.endswith('.7z/'):
+                if "zips" in filetypes:
+                    store_archives(url)
+
+            links_list.append(url)
                 
         # If there are no links on the page, backtrack to the last link or exit
         if not links:
             
             # If there are links in the parent stack, backtrack to the last link
             if parent_stack:
-                return search_links(parent_stack.pop(), parent_stack)
+                curr_num_links += 1
+                print("Now the current number of links is " + str(curr_num_links) + ".")
+                if curr_num_links > max_num_links:
+                    raise Exception("🛑 Max number of links reached")
+                return search_links(parent_stack.pop(), parent_stack, curr_num_links)
             
             # If there are no more links to check, we're done
             else:
                 return
         
-        # Search for images, videos, and audios on current page before checking links
-        if "imgs" in filetypes and url not in links_list:
-            store_images(url)
-            
-        if "vids" in filetypes and url not in links_list:
-            store_videos(url)
-            
-        if "mp3s" in filetypes and url not in links_list:
-            store_audios(url)
-        
         # Iterate over each link and check its file type
         for link in links:
             
-            # Fixes relative directory links
-            if not link.get('href').startswith('http') and not link.get('href').startswith(url):
-                link['href'] = url + "/" + link.get('href') if not url.endswith('/') else url + link.get('href')
+            curr_num_links += 1
+            if curr_num_links > max_num_links:
+                raise Exception("🛑 Max number of links reached")
             
             try:
-                # Make sure the link stays on the parent domain and hasn't already been checked
-                if link.get('href') not in links_list and link.get('href') != parent_url:
-                    
-                    print("Found link: " + link.get('href'))
-                    
-                    # If the link is a html file, php file, or a directory, we'll store the text and check for more links
-                    if link.get('href').lower().endswith('.html') or link.get('href').lower().endswith('.htm') or link.get('href').lower().endswith('.php') or link.get('href').lower().endswith('/'):
-                        curr_num_links += 1
-                        if curr_num_links > max_num_links:
-                            print("Reached max number of links")
-                            return
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "htmls" in filetypes:
-                            store_html_text(link.get('href'))
-                        parent_stack.append(url)
-                        search_links(link.get('href'), parent_stack)
-                    
-                    # If the link is a txt file, we'll just store the text
-                    elif link.get('href').lower().endswith('.txt'):
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "htmls" in filetypes:
-                            store_html_text(link.get('href'))
-                        
-                    # If the link is a pdf file, we'll just store the text (after preprocessing)
-                    elif link.get('href').lower().endswith('.pdf'): 
-                        links_list.append(link.get('href'))
-                        if "src" in filetypes:
-                            store_src(link.get('href'))
-                        if "htmls" in filetypes:
-                            store_html_text(link.get('href'))
-                        if "pdfs" in filetypes:
-                            store_pdf(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.doc') or link.get('href').lower().endswith('.docx') or link.get('href').lower().endswith('.odt'):
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "docs" in filetypes:
-                            store_doc(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.xls') or link.get('href').lower().endswith('.xlsx') or link.get('href').lower().endswith('.ods'):
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "xls" in filetypes:
-                            store_xls(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.ppt') or link.get('href').lower().endswith('.pptx') or link.get('href').lower().endswith('.odp'):
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "ppts" in filetypes:
-                            store_ppt(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.jpg') or link.get('href').lower().endswith('.jpeg') or link.get('href').lower().endswith('.png') or link.get('href').lower().endswith('.gif') or link.get('href').lower().endswith('.svg') or link.get('href').lower().endswith('.ico') or link.get('href').lower().endswith('webp'):
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "imgs" in filetypes:
-                            store_images(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.mp4') or link.get('href').lower().endswith('.webm') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.mpg') or link.get('href').lower().endswith('.mpeg') or link.get('href').lower().endswith('.avi') or link.get('href').lower().endswith('.mov') or link.get('href').lower().endswith('.wmv') or link.get('href').lower().endswith('.flv'):
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "vids" in filetypes:
-                            store_videos(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.mp3') or link.get('href').lower().endswith('.wav') or link.get('href').lower().endswith('.aac') or link.get('href').lower().endswith('.ogg') or link.get('href').lower().endswith('.wma') or link.get('href').lower().endswith('.flac'):
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "mp3s" in filetypes:
-                            store_audios(link.get('href'))
-                            
-                    elif link.get('href').lower().endswith('.zip') or link.get('href').lower().endswith('.rar') or link.get('href').lower().endswith('.tar') or link.get('href').lower().endswith('.gz') or link.get('href').lower().endswith('.7z') or link.get('href').lower().endswith('.xz') or link.get('href').lower().endswith('.bz2'):
-                        links_list.append(link.get('href'))
-                        if "srcs" in filetypes:
-                            store_src(link.get('href'))
-                        if "zips" in filetypes:
-                            store_archives(link.get('href'))
-                            
-                            
-                    # If the link is a different type (such as an image) we just ignore it
-                    else:
-                        continue
+                print("Searching the next link with a current number of links of " + str(curr_num_links) + ".")
+                search_links(link.get('href'), parent_stack, curr_num_links)
+                
+            # Either the max number of links was reached or the given link couldn't be crawled
             except Exception as e:
-                err_file = open(str(BASE_DIR) + "/Output/Errors/" + parent_url_file + ".txt", "a+")
-                err_file.write("Ignored " + link.get('href') + " due to " + str(e) + "\n")
-                continue
-
-        # If there are no more links to visit, backtrack to the parent URL
-        if parent_stack:
-            return search_links(parent_stack.pop(), parent_stack)
+                if e.args[0] == "🛑 Max number of links reached":
+                    raise Exception("🛑 Max number of links reached")
+                else:
+                    print("⚠️  Error reading link: " + link.get('href'))
+                    continue
 
     # Search for all links on the page
-    search_links(parent_url, [])
+    try:
+        search_links(parent_url, [])
+    except Exception as e:
+        if e.args[0] == "🛑 Max number of links reached":
+            print(e.args[0])
+        else:
+            print("🚨  Something went really wrong")
+            
     
     # Perform the indexing and word counting if the user wants html text (for the search engine)
     if "htmls" in filetypes:
+        print()
         index()
         count_words()
     
